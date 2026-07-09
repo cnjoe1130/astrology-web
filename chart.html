@@ -60,6 +60,9 @@ body{
 .form-section{
   max-width:680px;margin:0 auto;padding:1.5rem 2rem 2.5rem;
 }
+.form-section.synastry-mode{
+  max-width:1100px;
+}
 .form-card{
   background:var(--paper-2);border-radius:16px;
   padding:2rem;border:1px solid rgba(25,21,17,.05);
@@ -219,11 +222,81 @@ body{
 .footer a{color:var(--accent);text-decoration:none}
 .footer a:hover{text-decoration:underline}
 
+/* ── Mode Toggle ── */
+.mode-toggle-wrap{text-align:center;padding:.5rem 2rem 1rem}
+.mode-toggle{
+  display:inline-flex;background:var(--paper-2);
+  border-radius:30px;padding:4px;border:1px solid rgba(25,21,17,.08);
+}
+.mode-toggle button{
+  padding:.5rem 1.5rem;border:none;border-radius:26px;
+  font-family:var(--font-body);font-size:.9rem;font-weight:500;
+  color:var(--ink-2);background:transparent;cursor:pointer;
+  transition:all .25s;white-space:nowrap;
+}
+.mode-toggle button.active{
+  background:var(--accent);color:#fff;
+  box-shadow:0 2px 8px rgba(166,62,12,.2);
+}
+.mode-toggle button:not(.active):hover{color:var(--ink);background:rgba(25,21,17,.04)}
+
+/* ── Synastry Form Pair ── */
+.form-card-pair{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.form-card-pair .form-card{position:relative;padding-top:2.5rem}
+.form-label-a,.form-label-b{
+  position:absolute;top:.8rem;left:1rem;
+  font-family:var(--font-display);font-weight:700;font-size:1rem;
+  display:flex;align-items:center;gap:.4rem;
+}
+.form-label-a{color:var(--accent)}
+.form-label-b{color:#8b5cf6}
+.synastry-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:50%;
+  background:rgba(139,92,246,.12);color:#8b5cf6;
+  font-size:.7rem;font-weight:700;font-family:var(--font-body);
+}
+.form-section .btn-calculate{margin-top:1.25rem}
+#synastryFormCard{display:none}
+#synastryFormCard .btn-calculate-wrap{text-align:center;margin-top:1.25rem}
+
+/* ── Synastry Result ── */
+.synastry-score-bar{
+  display:flex;align-items:center;gap:.75rem;margin-bottom:.6rem;
+}
+.synastry-score-label{
+  width:80px;font-size:.82rem;font-weight:600;color:var(--ink-2);flex-shrink:0;
+}
+.synastry-score-track{
+  flex:1;height:10px;background:rgba(25,21,17,.06);
+  border-radius:5px;overflow:hidden;
+}
+.synastry-score-fill{
+  height:100%;border-radius:5px;transition:width .8s ease;
+}
+.synastry-score-val{
+  width:36px;text-align:right;font-size:.85rem;font-weight:600;
+  font-family:var(--font-mono);color:var(--ink-2);
+}
+.synastry-aspect-list{
+  display:flex;flex-direction:column;gap:.5rem;
+}
+.synastry-aspect-item{
+  display:flex;align-items:center;gap:.5rem;
+  padding:.45rem .75rem;border-radius:8px;
+  background:rgba(236,72,153,.05);border:1px solid rgba(236,72,153,.1);
+  font-size:.85rem;
+}
+.synastry-aspect-item .asp-icon{color:#ec4899;font-size:1rem}
+.synastry-aspect-item .asp-planet{font-weight:600;color:var(--ink)}
+.synastry-aspect-item .asp-desc{color:var(--ink-2);margin-left:auto;font-size:.8rem}
+
 /* ── Responsive ── */
 @media(max-width:800px){
   .chart-layout{grid-template-columns:1fr}
   .chart-svg-wrap{order:-1}
   .big3{grid-template-columns:repeat(3,1fr);gap:.5rem}
+  .form-card-pair{grid-template-columns:1fr}
 }
 @media(max-width:520px){
   .nav{padding:.75rem 1rem}
@@ -234,6 +307,8 @@ body{
   .result-section{padding:0 1rem 2rem}
   .big3{grid-template-columns:1fr}
   .reading-panel{gap:1rem}
+  .mode-toggle-wrap{padding:.5rem 1rem}
+  .mode-toggle button{padding:.45rem 1rem;font-size:.85rem}
 }
 </style>
 </head>
@@ -254,9 +329,18 @@ body{
   <p>输入你的出生信息，生成专属星盘</p>
 </div>
 
+<!-- Mode Toggle -->
+<div class="mode-toggle-wrap">
+  <div class="mode-toggle">
+    <button id="modeSingle" class="active" onclick="switchMode('single')">个人排盘</button>
+    <button id="modeSynastry" onclick="switchMode('synastry')">合盘配对</button>
+  </div>
+</div>
+
 <!-- Input Form -->
 <section class="form-section">
-  <div class="form-card">
+  <!-- Single chart mode form -->
+  <div class="form-card" id="singleFormCard">
     <form id="chartForm" onsubmit="return false;">
       <div class="form-grid">
         <div class="form-group">
@@ -281,6 +365,67 @@ body{
       </div>
       <button type="submit" class="btn-calculate" id="calcBtn" onclick="calculateChart()">✦ 生成星盘</button>
     </form>
+  </div>
+
+  <!-- Synastry mode form -->
+  <div id="synastryFormCard">
+    <div class="form-card-pair">
+      <div class="form-card">
+        <div class="form-label-a">✦ 你</div>
+        <form id="synastryFormA" onsubmit="return false;">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>姓名</label>
+              <input type="text" id="userNameA" placeholder="你的名字" value="">
+            </div>
+            <div class="form-group">
+              <label>出生日期</label>
+              <input type="date" id="birthDateA" value="1994-11-30">
+            </div>
+            <div class="form-group">
+              <label>出生时间</label>
+              <input type="time" id="birthTimeA" value="01:50">
+            </div>
+            <div class="form-group city-input-wrap">
+              <label>出生城市</label>
+              <input type="text" id="birthCityA" placeholder="输入城市名…" autocomplete="off" value="上海">
+              <div class="city-suggestions" id="citySuggestionsA"></div>
+            </div>
+            <input type="hidden" id="cityLatA" value="">
+            <input type="hidden" id="cityLngA" value="">
+          </div>
+        </form>
+      </div>
+      <div class="form-card">
+        <div class="form-label-b"><span class="synastry-badge">B</span> TA</div>
+        <form id="synastryFormB" onsubmit="return false;">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>姓名</label>
+              <input type="text" id="userNameB" placeholder="TA的名字" value="">
+            </div>
+            <div class="form-group">
+              <label>出生日期</label>
+              <input type="date" id="birthDateB" value="">
+            </div>
+            <div class="form-group">
+              <label>出生时间</label>
+              <input type="time" id="birthTimeB" value="">
+            </div>
+            <div class="form-group city-input-wrap">
+              <label>出生城市</label>
+              <input type="text" id="birthCityB" placeholder="输入城市名…" autocomplete="off" value="">
+              <div class="city-suggestions" id="citySuggestionsB"></div>
+            </div>
+            <input type="hidden" id="cityLatB" value="">
+            <input type="hidden" id="cityLngB" value="">
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="btn-calculate-wrap">
+      <button type="button" class="btn-calculate" id="synastryCalcBtn" onclick="calculateSynastry()">✦ 生成合盘</button>
+    </div>
   </div>
 </section>
 
@@ -321,6 +466,42 @@ body{
       <div class="reading-card">
         <h3><span>✦</span> 优势与课题</h3>
         <div id="traitsContent"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Synastry Result Section -->
+<section class="result-section" id="synastryResultSection">
+  <div class="result-header">
+    <h2 id="synastryResultTitle">合盘分析</h2>
+    <p class="birth-info" id="synastryResultBirthInfo"></p>
+  </div>
+
+  <div class="chart-layout">
+    <!-- SVG Chart -->
+    <div class="chart-svg-wrap">
+      <svg id="synastryChartSvg" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <!-- Reading Panel -->
+    <div class="reading-panel">
+      <!-- Compatibility Overview -->
+      <div class="reading-card">
+        <h3><span>♡</span> 配对总览</h3>
+        <div id="synastryScores"></div>
+      </div>
+
+      <!-- Key Synastry Aspects -->
+      <div class="reading-card">
+        <h3><span>✧</span> 关键相位</h3>
+        <div id="synastryKeyAspects" class="synastry-aspect-list"></div>
+      </div>
+
+      <!-- Compatibility Reading -->
+      <div class="reading-card">
+        <h3><span>✦</span> 配对解读</h3>
+        <div id="synastryReading"></div>
       </div>
     </div>
   </div>
@@ -671,8 +852,54 @@ citySuggestions.addEventListener('click', function(e) {
 document.addEventListener('click', function(e) {
   if (!e.target.closest('.city-input-wrap')) {
     citySuggestions.classList.remove('visible');
+    const sa = document.getElementById('citySuggestionsA');
+    const sb = document.getElementById('citySuggestionsB');
+    if (sa) sa.classList.remove('visible');
+    if (sb) sb.classList.remove('visible');
   }
 });
+
+// ═══════════════════════════════════════════════════
+// SYNASTRY CITY AUTOCOMPLETE (Person A & B)
+// ═══════════════════════════════════════════════════
+let selectedCityA = null;
+let selectedCityB = null;
+
+function setupCityAutocomplete(inputId, suggestionsId, latId, lngId, setter) {
+  const input = document.getElementById(inputId);
+  const suggestions = document.getElementById(suggestionsId);
+  const latEl = document.getElementById(latId);
+  const lngEl = document.getElementById(lngId);
+  if (!input || !suggestions) return;
+
+  input.addEventListener('input', function() {
+    const val = this.value.trim().toLowerCase();
+    if (val.length === 0) { suggestions.classList.remove('visible'); return; }
+    const matches = CITIES.filter(c =>
+      c.name.includes(val) || c.pinyin.includes(val)
+    ).slice(0, 8);
+    if (matches.length === 0) { suggestions.classList.remove('visible'); return; }
+    suggestions.innerHTML = matches.map((c,i) =>
+      `<div class="city-suggestion" data-idx="${CITIES.indexOf(c)}">${c.name}<small>${c.lat.toFixed(2)}°N, ${c.lng.toFixed(2)}°E</small></div>`
+    ).join('');
+    suggestions.classList.add('visible');
+  });
+
+  suggestions.addEventListener('click', function(e) {
+    const item = e.target.closest('.city-suggestion');
+    if (!item) return;
+    const idx = parseInt(item.dataset.idx);
+    const city = CITIES[idx];
+    input.value = city.name;
+    latEl.value = city.lat;
+    lngEl.value = city.lng;
+    setter(city);
+    suggestions.classList.remove('visible');
+  });
+}
+
+setupCityAutocomplete('birthCityA', 'citySuggestionsA', 'cityLatA', 'cityLngA', function(c) { selectedCityA = c; });
+setupCityAutocomplete('birthCityB', 'citySuggestionsB', 'cityLatB', 'cityLngB', function(c) { selectedCityB = c; });
 
 // ═══════════════════════════════════════════════════
 // ASTRONOMICAL CALCULATIONS
@@ -937,6 +1164,340 @@ function calcAspects(positions) {
     }
   }
   return aspects;
+}
+
+// ═══════════════════════════════════════════════════
+// SYNASTRY ASPECT CALCULATION
+// ═══════════════════════════════════════════════════
+function calcSynastryAspects(posA, posB) {
+  const planetKeys = ['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto'];
+  const aspects = [];
+
+  for (const keyA of planetKeys) {
+    for (const keyB of planetKeys) {
+      const lonA = posA[keyA].signIndex * 30 + posA[keyA].degree;
+      const lonB = posB[keyB].signIndex * 30 + posB[keyB].degree;
+      let diff = Math.abs(lonA - lonB);
+      if (diff > 180) diff = 360 - diff;
+
+      for (const asp of ASPECTS) {
+        const diffFromAngle = Math.abs(diff - asp.angle);
+        if (diffFromAngle <= asp.orb + 1) { // +1 wider orb for synastry
+          aspects.push({
+            planet1: keyA,
+            planet2: keyB,
+            person1: 'A',
+            person2: 'B',
+            aspect: asp,
+            exact: diffFromAngle,
+            orb: diffFromAngle
+          });
+        }
+      }
+    }
+  }
+  return aspects;
+}
+
+// Element compatibility scoring
+function elementScore(elemA, elemB) {
+  if (elemA === elemB) return 90;
+  const complementary = {fire:'air',air:'fire',earth:'water',water:'earth'};
+  if (complementary[elemA] === elemB) return 75;
+  const compatible = {fire:'earth',earth:'fire',air:'water',water:'air'};
+  if (compatible[elemA] === elemB) return 60;
+  return 45;
+}
+
+// ═══════════════════════════════════════════════════
+// SYNASTRY CHART RENDERING
+// ═══════════════════════════════════════════════════
+function renderSynastryChart(posA, posB, aspectsA, aspectsB, synastryAspects) {
+  const svg = document.getElementById('synastryChartSvg');
+  const cx = 300, cy = 300;
+  const outerR = 280, zodiacR = 260, innerR = 200, houseR = 190, planetR = 170, centerR = 80;
+
+  const PERSON_B_COLORS = {
+    fire:'#8b5cf6', earth:'#a78bfa', air:'#c4b5fd', water:'#7c3aed'
+  };
+
+  let html = '';
+
+  // Background
+  html += `<circle cx="${cx}" cy="${cy}" r="${outerR}" fill="rgba(247,243,236,0.5)" stroke="rgba(25,21,17,0.1)" stroke-width="1.5"/>`;
+  html += `<circle cx="${cx}" cy="${cy}" r="${innerR}" fill="rgba(239,233,223,0.5)" stroke="rgba(25,21,17,0.08)" stroke-width="1"/>`;
+  html += `<circle cx="${cx}" cy="${cy}" r="${centerR}" fill="rgba(239,233,223,0.7)" stroke="rgba(25,21,17,0.08)" stroke-width="1"/>`;
+
+  // Zodiac segments
+  for (let i = 0; i < 12; i++) {
+    const startAngle = (i * 30 - 90) * Math.PI / 180;
+    const endAngle = ((i + 1) * 30 - 90) * Math.PI / 180;
+    const sign = ZODIAC_SIGNS[i];
+    const color = ZODIAC_COLORS[sign.element];
+
+    const x1 = cx + zodiacR * Math.cos(startAngle);
+    const y1 = cy + zodiacR * Math.sin(startAngle);
+    const x2 = cx + zodiacR * Math.cos(endAngle);
+    const y2 = cy + zodiacR * Math.sin(endAngle);
+    const ix1 = cx + innerR * Math.cos(startAngle);
+    const iy1 = cy + innerR * Math.sin(startAngle);
+    const ix2 = cx + innerR * Math.cos(endAngle);
+    const iy2 = cy + innerR * Math.sin(endAngle);
+
+    html += `<path d="M${x1},${y1} A${zodiacR},${zodiacR} 0 0,1 ${x2},${y2} L${ix2},${iy2} A${innerR},${innerR} 0 0,0 ${ix1},${iy1} Z" fill="${color}12" stroke="${color}30" stroke-width="0.5"/>`;
+
+    const midAngle = ((i * 30 + 15) - 90) * Math.PI / 180;
+    const glyphR = (zodiacR + innerR) / 2;
+    const gx = cx + glyphR * Math.cos(midAngle);
+    const gy = cy + glyphR * Math.sin(midAngle);
+    html += `<text x="${gx}" y="${gy}" text-anchor="middle" dominant-baseline="central" font-size="18" fill="${color}" opacity="0.85">${sign.glyph}</text>`;
+
+    const nameR = outerR + 12;
+    const nx = cx + nameR * Math.cos(midAngle);
+    const ny = cy + nameR * Math.sin(midAngle);
+    html += `<text x="${nx}" y="${ny}" text-anchor="middle" dominant-baseline="central" font-size="8" fill="${color}" opacity="0.7" font-family="var(--font-body)">${sign.name}</text>`;
+  }
+
+  // Degree markers
+  for (let i = 0; i < 360; i += 10) {
+    const angle = (i - 90) * Math.PI / 180;
+    const isMajor = (i % 30 === 0);
+    const r1 = outerR - (isMajor ? 8 : 4);
+    const r2 = outerR;
+    html += `<line x1="${cx + r1 * Math.cos(angle)}" y1="${cy + r1 * Math.sin(angle)}" x2="${cx + r2 * Math.cos(angle)}" y2="${cy + r2 * Math.sin(angle)}" stroke="rgba(25,21,17,${isMajor ? 0.2 : 0.08})" stroke-width="${isMajor ? 1.5 : 0.5}"/>`;
+  }
+
+  // Person A ascendant line (solid red)
+  const ascA = posA.ascendant;
+  const ascAngleA = (ascA.signIndex * 30 + ascA.degree - 90) * Math.PI / 180;
+  html += `<line x1="${cx + centerR * Math.cos(ascAngleA)}" y1="${cy + centerR * Math.sin(ascAngleA)}" x2="${cx + outerR * Math.cos(ascAngleA)}" y2="${cy + outerR * Math.sin(ascAngleA)}" stroke="var(--accent)" stroke-width="2"/>`;
+
+  // Person B ascendant line (dashed purple)
+  const ascB = posB.ascendant;
+  const ascAngleB = (ascB.signIndex * 30 + ascB.degree - 90) * Math.PI / 180;
+  html += `<line x1="${cx + centerR * Math.cos(ascAngleB)}" y1="${cy + centerR * Math.sin(ascAngleB)}" x2="${cx + outerR * Math.cos(ascAngleB)}" y2="${cy + outerR * Math.sin(ascAngleB)}" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="6,4"/>`;
+
+  // Person A natal aspects (solid, inside chart)
+  for (const asp of aspectsA) {
+    const p1 = posA[asp.planet1];
+    const p2 = posA[asp.planet2];
+    const angle1 = (p1.signIndex * 30 + p1.degree - 90) * Math.PI / 180;
+    const angle2 = (p2.signIndex * 30 + p2.degree - 90) * Math.PI / 180;
+    const r = 135;
+    const x1 = cx + r * Math.cos(angle1);
+    const y1 = cy + r * Math.sin(angle1);
+    const x2 = cx + r * Math.cos(angle2);
+    const y2 = cy + r * Math.sin(angle2);
+    const opacity = Math.max(0.2, 1 - asp.orb / asp.aspect.orb * 0.6);
+    html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${asp.aspect.color}" stroke-width="1" opacity="${opacity * 0.5}"/>`;
+  }
+
+  // Synastry inter-chart aspects (dashed pink)
+  for (const asp of synastryAspects) {
+    const pA = posA[asp.planet1];
+    const pB = posB[asp.planet2];
+    const angleA = (pA.signIndex * 30 + pA.degree - 90) * Math.PI / 180;
+    const angleB = (pB.signIndex * 30 + pB.degree - 90) * Math.PI / 180;
+    const r = 135;
+    const x1 = cx + r * Math.cos(angleA);
+    const y1 = cy + r * Math.sin(angleA);
+    const x2 = cx + r * Math.cos(angleB);
+    const y2 = cy + r * Math.sin(angleB);
+    const opacity = Math.max(0.25, 1 - asp.orb / (asp.aspect.orb + 1) * 0.6);
+    html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ec4899" stroke-width="1.2" stroke-dasharray="5,3" opacity="${opacity}"/>`;
+  }
+
+  // Person A planets (circles with glyphs - existing style)
+  const planetOrder = ['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto'];
+  for (const key of planetOrder) {
+    const pos = posA[key];
+    const angle = (pos.signIndex * 30 + pos.degree - 90) * Math.PI / 180;
+    const px = cx + planetR * Math.cos(angle);
+    const py = cy + planetR * Math.sin(angle);
+    const sign = ZODIAC_SIGNS[pos.signIndex];
+    const color = ZODIAC_COLORS[sign.element];
+
+    html += `<circle cx="${px}" cy="${py}" r="14" fill="${color}18" stroke="${color}" stroke-width="1"/>`;
+    html += `<text x="${px}" y="${py}" text-anchor="middle" dominant-baseline="central" font-size="13" fill="${color}" font-weight="600">${PLANET_GLYPHS[key]}</text>`;
+  }
+
+  // Person B planets (diamonds with B prefix - purple tones)
+  for (const key of planetOrder) {
+    const pos = posB[key];
+    const angle = (pos.signIndex * 30 + pos.degree - 90) * Math.PI / 180;
+    const px = cx + planetR * Math.cos(angle);
+    const py = cy + planetR * Math.sin(angle);
+    const color = '#8b5cf6';
+    const size = 13;
+
+    // Diamond shape (rotated square)
+    html += `<rect x="${px - size}" y="${py - size}" width="${size * 2}" height="${size * 2}" rx="3" fill="rgba(139,92,246,0.12)" stroke="${color}" stroke-width="1" transform="rotate(45 ${px} ${py})"/>`;
+    html += `<text x="${px}" y="${py - 1}" text-anchor="middle" dominant-baseline="central" font-size="8" fill="${color}" font-weight="700" font-family="var(--font-body)">B</text>`;
+    html += `<text x="${px}" y="${py + 9}" text-anchor="middle" dominant-baseline="central" font-size="10" fill="${color}" font-weight="600">${PLANET_GLYPHS[key]}</text>`;
+  }
+
+  // Center info - Person A
+  html += `<text x="${cx}" y="${cy - 20}" text-anchor="middle" font-family="var(--font-display)" font-size="10" fill="var(--ink-3)" font-weight="600">A · ASC</text>`;
+  html += `<text x="${cx}" y="${cy - 3}" text-anchor="middle" font-family="var(--font-display)" font-size="13" fill="var(--accent)" font-weight="700">${Math.floor(ascA.degree)}°${ZODIAC_SIGNS[ascA.signIndex].glyph}</text>`;
+  html += `<text x="${cx}" y="${cy + 12}" text-anchor="middle" font-family="var(--font-body)" font-size="8" fill="var(--ink-3)">${ZODIAC_SIGNS[ascA.signIndex].name}</text>`;
+  // Person B
+  html += `<text x="${cx}" y="${cy + 28}" text-anchor="middle" font-family="var(--font-display)" font-size="10" fill="#8b5cf6" font-weight="600">B · ASC</text>`;
+  html += `<text x="${cx}" y="${cy + 42}" text-anchor="middle" font-family="var(--font-display)" font-size="12" fill="#8b5cf6" font-weight="700">${Math.floor(ascB.degree)}°${ZODIAC_SIGNS[ascB.signIndex].glyph}</text>`;
+
+  svg.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// SYNASTRY READING
+// ═══════════════════════════════════════════════════
+function renderSynastryReading(posA, posB, aspectsA, aspectsB, synastryAspects) {
+  // --- Compatibility Scores ---
+  const sunA = ZODIAC_SIGNS[posA.sun.signIndex];
+  const sunB = ZODIAC_SIGNS[posB.sun.signIndex];
+  const moonA = ZODIAC_SIGNS[posA.moon.signIndex];
+  const moonB = ZODIAC_SIGNS[posB.moon.signIndex];
+  const ascA = ZODIAC_SIGNS[posA.ascendant.signIndex];
+  const ascB = ZODIAC_SIGNS[posB.ascendant.signIndex];
+
+  // Venus-Mars romantic chemistry
+  const venusA = ZODIAC_SIGNS[posA.venus.signIndex];
+  const marsB = ZODIAC_SIGNS[posB.mars.signIndex];
+  const venusB = ZODIAC_SIGNS[posB.venus.signIndex];
+  const marsA = ZODIAC_SIGNS[posA.mars.signIndex];
+
+  // Score: Venus(A) with Mars(B) — classic romance indicator
+  const venusMarsScore = Math.max(
+    elementScore(venusA.element, marsB.element),
+    elementScore(marsA.element, venusB.element)
+  ) / 2 + Math.max(
+    elementScore(venusA.element, marsB.element),
+    elementScore(marsA.element, venusB.element)
+  ) / 2;
+  // Simplified: average both directions
+  const vmScore = Math.round((elementScore(venusA.element, marsB.element) + elementScore(marsA.element, venusB.element)) / 2);
+
+  const sunScore = elementScore(sunA.element, sunB.element);
+  const moonScore = elementScore(moonA.element, moonB.element);
+  const ascScore = elementScore(ascA.element, ascB.element);
+  const overallScore = Math.round(sunScore * 0.3 + moonScore * 0.3 + vmScore * 0.25 + ascScore * 0.15);
+
+  const scores = [
+    {label:'太阳', score:sunScore, desc:`${sunA.name} ↔ ${sunB.name}`},
+    {label:'月亮', score:moonScore, desc:`${moonA.name} ↔ ${moonB.name}`},
+    {label:'金火', score:vmScore, desc:'浪漫吸引力'},
+    {label:'上升', score:ascScore, desc:`${ascA.name} ↔ ${ascB.name}`},
+  ];
+
+  function scoreColor(s) {
+    if (s >= 80) return 'linear-gradient(90deg,#6b8f3c,#8ab648)';
+    if (s >= 65) return 'linear-gradient(90deg,#4a90c4,#6bb3e0)';
+    if (s >= 50) return 'linear-gradient(90deg,#d9a51f,#e8c547)';
+    return 'linear-gradient(90deg,#d9651f,#e8784a)';
+  }
+
+  let scoresHtml = '';
+  for (const s of scores) {
+    scoresHtml += `
+      <div class="synastry-score-bar">
+        <div class="synastry-score-label">${s.label}</div>
+        <div class="synastry-score-track">
+          <div class="synastry-score-fill" style="width:${s.score}%;background:${scoreColor(s.score)}"></div>
+        </div>
+        <div class="synastry-score-val">${s.score}</div>
+      </div>`;
+  }
+  // Overall
+  scoresHtml += `
+    <div class="synastry-score-bar" style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(25,21,17,.08)">
+      <div class="synastry-score-label" style="font-weight:700">综合</div>
+      <div class="synastry-score-track">
+        <div class="synastry-score-fill" style="width:${overallScore}%;background:${scoreColor(overallScore)}"></div>
+      </div>
+      <div class="synastry-score-val" style="font-size:1rem">${overallScore}</div>
+    </div>`;
+
+  document.getElementById('synastryScores').innerHTML = scoresHtml;
+
+  // --- Key Synastry Aspects ---
+  const personalPlanets = ['sun','moon','mercury','venus','mars'];
+  const keyAspects = synastryAspects
+    .filter(a => personalPlanets.includes(a.planet1) && personalPlanets.includes(a.planet2))
+    .sort((a, b) => {
+      // Prioritize conjunctions and trines
+      const priority = {'合相':0,'三分':1,'对冲':2,'六分':3,'四分':4};
+      const pa = priority[a.aspect.name] ?? 5;
+      const pb = priority[b.aspect.name] ?? 5;
+      return pa - pb || a.orb - b.orb;
+    })
+    .slice(0, 8);
+
+  let aspectsHtml = '';
+  if (keyAspects.length === 0) {
+    aspectsHtml = '<div style="color:var(--ink-3);font-size:.85rem;padding:.5rem 0">未发现重要的跨盘相位</div>';
+  } else {
+    for (const asp of keyAspects) {
+      const p1Name = PLANET_NAMES[asp.planet1];
+      const p2Name = PLANET_NAMES[asp.planet2];
+      aspectsHtml += `
+        <div class="synastry-aspect-item">
+          <span class="asp-icon">${asp.aspect.symbol}</span>
+          <span class="asp-planet">${p1Name}A — ${p2Name}B</span>
+          <span class="asp-desc">${asp.aspect.name} ${asp.orb.toFixed(1)}°</span>
+        </div>`;
+    }
+  }
+  document.getElementById('synastryKeyAspects').innerHTML = aspectsHtml;
+
+  // --- Compatibility Reading Text ---
+  let reading = '';
+  reading += `<p style="color:var(--ink-2);font-size:.9rem;line-height:1.8;margin-bottom:.75rem">`;
+  reading += `<strong>${sunA.name}太阳（A）</strong>与<strong>${sunB.name}太阳（B）</strong>的元素配对${sunScore >= 75 ? '十分和谐' : sunScore >= 60 ? '有一定的互补性' : '存在一些张力'}。`;
+  reading += `<strong>${moonA.name}月亮（A）</strong>与<strong>${moonB.name}月亮（B）</strong>的情感互动${moonScore >= 75 ? '非常默契' : moonScore >= 60 ? '需要一定的磨合' : '可能带来情感上的挑战'}。`;
+  reading += `</p>`;
+
+  reading += `<p style="color:var(--ink-2);font-size:.9rem;line-height:1.8;margin-bottom:.75rem">`;
+  if (vmScore >= 75) {
+    reading += `金星与火星的配对展现出<strong>强烈的浪漫吸引力</strong>，两人之间有天然的化学反应和激情。`;
+  } else if (vmScore >= 60) {
+    reading += `金星与火星的互动比较和谐，两人在感情表达上能够<strong>相互理解和欣赏</strong>。`;
+  } else {
+    reading += `金星与火星的配对需要更多耐心，双方在<strong>表达爱意的方式上可能有所不同</strong>，但这也能带来成长的机会。`;
+  }
+  reading += `</p>`;
+
+  reading += `<p style="color:var(--ink-2);font-size:.9rem;line-height:1.8">`;
+  if (overallScore >= 80) {
+    reading += `综合来看，这是一对<strong style="color:#6b8f3c">非常般配</strong>的组合！两人的能量在多个层面形成了良好的共振，既有深层的情感连接，也有外在的和谐互动。`;
+  } else if (overallScore >= 65) {
+    reading += `综合来看，这对组合<strong style="color:#4a90c4">相当不错</strong>。虽然不是每个方面都完美契合，但整体的能量互补性很好，能够互相支持和成长。`;
+  } else if (overallScore >= 50) {
+    reading += `综合来看，这对组合<strong style="color:#d9a51f">有挑战也有惊喜</strong>。差异带来的摩擦恰好是彼此学习和成长的契机，关键在于沟通和包容。`;
+  } else {
+    reading += `综合来看，这对组合<strong style="color:#d9651f">差异较大</strong>。但这并不意味着不匹配——恰恰相反，强烈的对比往往能激发出最深层的转化力量。`;
+  }
+  reading += `</p>`;
+
+  document.getElementById('synastryReading').innerHTML = reading;
+}
+
+// ═══════════════════════════════════════════════════
+// MODE SWITCHING
+// ═══════════════════════════════════════════════════
+let currentMode = 'single';
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('modeSingle').classList.toggle('active', mode === 'single');
+  document.getElementById('modeSynastry').classList.toggle('active', mode === 'synastry');
+  document.getElementById('singleFormCard').style.display = mode === 'single' ? '' : 'none';
+  document.getElementById('synastryFormCard').style.display = mode === 'synastry' ? '' : 'none';
+
+  // Toggle wider layout for synastry form
+  document.querySelector('.form-section').classList.toggle('synastry-mode', mode === 'synastry');
+
+  // Reset results when switching
+  document.getElementById('resultSection').classList.remove('visible');
+  document.getElementById('synastryResultSection').classList.remove('visible');
 }
 
 // ═══════════════════════════════════════════════════
@@ -1218,6 +1779,98 @@ function ascTraits(sign) {
 }
 
 // ═══════════════════════════════════════════════════
+// HELPER: parse form inputs for a person
+// ═══════════════════════════════════════════════════
+function parsePersonInputs(prefix) {
+  const nameEl = document.getElementById('userName' + prefix);
+  const dateEl = document.getElementById('birthDate' + prefix);
+  const timeEl = document.getElementById('birthTime' + prefix);
+  const cityEl = document.getElementById('birthCity' + prefix);
+  const latEl = document.getElementById('cityLat' + prefix);
+  const lngEl = document.getElementById('cityLng' + prefix);
+
+  const name = nameEl ? nameEl.value : '';
+  const dateStr = dateEl ? dateEl.value : '';
+  const timeStr = timeEl ? timeEl.value : '00:00';
+  const cityName = cityEl ? cityEl.value : '';
+
+  if (!dateStr) return null;
+
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hour, minute] = timeStr.split(':').map(Number);
+  const date = new Date(year, month - 1, day);
+
+  let lat = 31.2304, lng = 121.4737;
+  let tzOffset = 8;
+
+  const citySel = prefix === 'A' ? selectedCityA : (prefix === 'B' ? selectedCityB : null);
+  if (citySel) {
+    lat = citySel.lat;
+    lng = citySel.lng;
+    tzOffset = citySel.tz || 8;
+  } else if (cityName) {
+    const matched = CITIES.find(c => c.name === cityName);
+    if (matched) { lat = matched.lat; lng = matched.lng; tzOffset = matched.tz || 8; }
+  }
+
+  // Convert local time to UTC
+  let utcHour = hour - tzOffset;
+  let utcDay = day, utcMonth = month, utcYear = year;
+  if (utcHour < 0) { utcHour += 24; utcDay--; }
+  if (utcHour >= 24) { utcHour -= 24; utcDay++; }
+  const daysInMonth = [0,31,28,31,30,31,30,31,31,30,31,30,31];
+  if (utcYear % 4 === 0 && (utcYear % 100 !== 0 || utcYear % 400 === 0)) daysInMonth[2] = 29;
+  while (utcDay < 1) { utcMonth--; if (utcMonth < 1) { utcMonth = 12; utcYear--; } utcDay += daysInMonth[utcMonth]; }
+  while (utcDay > daysInMonth[utcMonth]) { utcDay -= daysInMonth[utcMonth]; utcMonth++; if (utcMonth > 12) { utcMonth = 1; utcYear++; } }
+
+  const utcDate = new Date(utcYear, utcMonth - 1, utcDay);
+  const positions = getPlanetPositions(utcDate, utcHour, minute, lng);
+
+  return { name: name || '星盘主人', dateStr, timeStr, cityName, date, hour, minute, lat, lng, positions, year, month, day };
+}
+
+// ═══════════════════════════════════════════════════
+// SYNASTRY CALCULATION
+// ═══════════════════════════════════════════════════
+function calculateSynastry() {
+  const btn = document.getElementById('synastryCalcBtn');
+  btn.disabled = true;
+  btn.textContent = '计算中…';
+
+  const personA = parsePersonInputs('A');
+  const personB = parsePersonInputs('B');
+
+  if (!personA) { alert('请输入你的出生信息'); btn.disabled = false; btn.textContent = '✦ 生成合盘'; return; }
+  if (!personB) { alert('请输入TA的出生信息'); btn.disabled = false; btn.textContent = '✦ 生成合盘'; return; }
+
+  const posA = personA.positions;
+  const posB = personB.positions;
+  const aspectsA = calcAspects(posA);
+  const aspectsB = calcAspects(posB);
+  const synastryAspects = calcSynastryAspects(posA, posB);
+
+  // Update header
+  document.getElementById('synastryResultTitle').textContent = `${personA.name} × ${personB.name} 合盘`;
+  const dateA = `${personA.year}年${personA.month}月${personA.day}日 ${personA.timeStr}`;
+  const dateB = `${personB.year}年${personB.month}月${personB.day}日 ${personB.timeStr}`;
+  document.getElementById('synastryResultBirthInfo').textContent =
+    `A: ${dateA} · ${personA.cityName || '未知'}  |  B: ${dateB} · ${personB.cityName || '未知'}`;
+
+  // Render
+  renderSynastryChart(posA, posB, aspectsA, aspectsB, synastryAspects);
+  renderSynastryReading(posA, posB, aspectsA, aspectsB, synastryAspects);
+
+  // Show result
+  document.getElementById('resultSection').classList.remove('visible');
+  const resultSection = document.getElementById('synastryResultSection');
+  resultSection.classList.add('visible');
+  resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  btn.disabled = false;
+  btn.textContent = '✦ 生成合盘';
+}
+
+// ═══════════════════════════════════════════════════
 // MAIN CALCULATION
 // ═══════════════════════════════════════════════════
 function calculateChart() {
@@ -1291,12 +1944,20 @@ function calculateChart() {
 
 // Auto-calculate on page load with default values
 window.addEventListener('DOMContentLoaded', function() {
-  // Set Shanghai as selected city
+  // Set Shanghai as selected city for main form
   const shanghai = CITIES.find(c => c.name === '上海');
   if (shanghai) {
     cityLat.value = shanghai.lat;
     cityLng.value = shanghai.lng;
     selectedCity = shanghai;
+  }
+  // Set Shanghai as default for synastry form A
+  const latA = document.getElementById('cityLatA');
+  const lngA = document.getElementById('cityLngA');
+  if (latA && shanghai) {
+    latA.value = shanghai.lat;
+    lngA.value = shanghai.lng;
+    selectedCityA = shanghai;
   }
 });
 </script>
