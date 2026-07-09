@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星盘解读 — 在线排盘</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --paper:#f7f3ec;--paper-2:#efe9df;
+  --ink:#191511;--ink-2:#544c44;--ink-3:#6e6459;
+  --accent:#a63e0c;--accent-bright:#d9651f;
+  --font-display:'Fraunces',Georgia,serif;
+  --font-body:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);color:var(--ink);
+  background:var(--paper);line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+
+/* ── Navigation ── */
+.nav{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 2rem;
+  background:rgba(247,243,236,.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(25,21,17,.06);
+}
+.nav-brand{
+  font-family:var(--font-display);font-weight:700;font-size:1.1rem;
+  color:var(--accent);text-decoration:none;letter-spacing:-.02em;
+}
+.nav-links{display:flex;gap:1.25rem;align-items:center}
+.nav-links a{
+  font-size:.85rem;font-weight:500;color:var(--ink-2);
+  text-decoration:none;transition:color .2s;
+}
+.nav-links a:hover{color:var(--accent)}
+
+/* ── Page Header ── */
+.page-header{
+  text-align:center;padding:2.5rem 2rem 1rem;
+}
+.page-header h1{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.8rem,4vw,2.8rem);
+  letter-spacing:-.02em;margin-bottom:.5rem;
+}
+.page-header h1 em{font-style:italic;color:var(--accent);font-variation-settings:"opsz" 144}
+.page-header p{color:var(--ink-2);font-size:1rem}
+
+/* ── Input Form ── */
+.form-section{
+  max-width:680px;margin:0 auto;padding:1.5rem 2rem 2.5rem;
+}
+.form-card{
+  background:var(--paper-2);border-radius:16px;
+  padding:2rem;border:1px solid rgba(25,21,17,.05);
+}
+.form-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;
+}
+.form-group{display:flex;flex-direction:column;gap:.4rem}
+.form-group.full{grid-column:1/-1}
+.form-group label{
+  font-size:.8rem;font-weight:600;color:var(--ink-2);
+  letter-spacing:.03em;
+}
+.form-group input,.form-group select{
+  padding:.7rem 1rem;border:1.5px solid rgba(25,21,17,.12);
+  border-radius:8px;font-family:var(--font-body);font-size:.95rem;
+  background:#fff;color:var(--ink);transition:border-color .2s;
+  outline:none;
+}
+.form-group input:focus,.form-group select:focus{
+  border-color:var(--accent);
+}
+.form-group input::placeholder{color:var(--ink-3)}
+.city-suggestions{
+  position:absolute;top:100%;left:0;right:0;
+  background:#fff;border:1.5px solid rgba(25,21,17,.12);
+  border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;
+  z-index:50;display:none;
+  box-shadow:0 8px 24px rgba(25,21,17,.1);
+}
+.city-suggestions.visible{display:block}
+.city-suggestion{
+  padding:.6rem 1rem;cursor:pointer;font-size:.9rem;
+  transition:background .15s;
+}
+.city-suggestion:hover{background:rgba(166,62,12,.06)}
+.city-suggestion small{color:var(--ink-3);font-size:.78rem;margin-left:.5rem}
+.city-input-wrap{position:relative}
+.btn-calculate{
+  margin-top:1.5rem;width:100%;
+  padding:.9rem;border:none;border-radius:10px;
+  background:var(--accent);color:#fff;
+  font-family:var(--font-body);font-weight:600;font-size:1rem;
+  cursor:pointer;transition:all .25s;
+  box-shadow:0 2px 12px rgba(166,62,12,.2);
+}
+.btn-calculate:hover{
+  background:var(--accent-bright);
+  box-shadow:0 4px 20px rgba(166,62,12,.3);
+  transform:translateY(-1px);
+}
+.btn-calculate:active{transform:translateY(0)}
+.btn-calculate:disabled{
+  opacity:.6;cursor:not-allowed;transform:none;
+}
+
+/* ── Chart Result ── */
+.result-section{
+  max-width:1100px;margin:0 auto;padding:0 2rem 3rem;
+  display:none;
+}
+.result-section.visible{display:block}
+.result-header{
+  text-align:center;margin-bottom:2rem;
+}
+.result-header h2{
+  font-family:var(--font-display);font-weight:700;
+  font-size:1.8rem;letter-spacing:-.02em;margin-bottom:.25rem;
+}
+.result-header .birth-info{
+  color:var(--ink-3);font-size:.9rem;
+}
+
+/* ── Chart Layout ── */
+.chart-layout{
+  display:grid;grid-template-columns:1fr 1fr;gap:2rem;
+  align-items:start;
+}
+.chart-svg-wrap{
+  background:var(--paper-2);border-radius:20px;
+  padding:1.5rem;border:1px solid rgba(25,21,17,.05);
+  display:flex;align-items:center;justify-content:center;
+}
+.chart-svg-wrap svg{width:100%;height:auto;max-width:520px}
+
+/* ── Reading Panel ── */
+.reading-panel{display:flex;flex-direction:column;gap:1.25rem}
+.reading-card{
+  background:var(--paper-2);border-radius:14px;
+  padding:1.5rem;border:1px solid rgba(25,21,17,.05);
+}
+.reading-card h3{
+  font-family:var(--font-display);font-weight:700;
+  font-size:1.1rem;margin-bottom:.75rem;
+  display:flex;align-items:center;gap:.5rem;
+}
+.reading-card h3 span{color:var(--accent);font-size:1.15rem}
+
+/* Big 3 */
+.big3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.big3-item{text-align:center}
+.big3-label{font-size:.7rem;color:var(--ink-3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.25rem}
+.big3-sign{
+  font-family:var(--font-display);font-weight:700;
+  font-size:1.15rem;color:var(--ink);
+}
+.big3-detail{font-size:.78rem;color:var(--ink-3);margin-top:.1rem}
+
+/* Element bars */
+.element-bars{display:flex;flex-direction:column;gap:.6rem}
+.element-row{display:flex;align-items:center;gap:.75rem}
+.element-name{width:40px;font-size:.8rem;font-weight:600;color:var(--ink-2)}
+.element-bar-bg{
+  flex:1;height:8px;background:rgba(25,21,17,.06);
+  border-radius:4px;overflow:hidden;
+}
+.element-bar-fill{
+  height:100%;border-radius:4px;transition:width .6s ease;
+}
+.element-bar-fill.fire{background:linear-gradient(90deg,#d9651f,#ff8c42)}
+.element-bar-fill.earth{background:linear-gradient(90deg,#6b8f3c,#8ab648)}
+.element-bar-fill.air{background:linear-gradient(90deg,#4a90c4,#6bb3e0)}
+.element-bar-fill.water{background:linear-gradient(90deg,#3d7a8a,#5aadbd)}
+.element-pct{width:32px;text-align:right;font-size:.8rem;color:var(--ink-3);font-family:var(--font-mono)}
+
+/* Strengths & Challenges */
+.trait-list{display:flex;flex-wrap:wrap;gap:.5rem}
+.trait-tag{
+  padding:.35rem .75rem;border-radius:20px;font-size:.82rem;font-weight:500;
+}
+.trait-tag.strength{
+  background:rgba(107,143,60,.1);color:#5a7a2e;
+  border:1px solid rgba(107,143,60,.15);
+}
+.trait-tag.challenge{
+  background:rgba(166,62,12,.07);color:var(--accent);
+  border:1px solid rgba(166,62,12,.12);
+}
+
+/* Planets table */
+.planets-table{width:100%;border-collapse:collapse}
+.planets-table td{
+  padding:.45rem 0;border-bottom:1px solid rgba(25,21,17,.05);
+  font-size:.88rem;
+}
+.planets-table tr:last-child td{border-bottom:none}
+.planets-table .glyph{font-size:1.1rem;width:28px;text-align:center}
+.planets-table .pname{font-weight:600;width:80px}
+.planets-table .psign{color:var(--ink-2)}
+.planets-table .pdeg{font-family:var(--font-mono);font-size:.82rem;color:var(--ink-3)}
+
+/* ── Footer ── */
+.footer{
+  padding:2rem;border-top:1px solid rgba(25,21,17,.06);
+  text-align:center;color:var(--ink-3);font-size:.82rem;
+}
+.footer a{color:var(--accent);text-decoration:none}
+.footer a:hover{text-decoration:underline}
+
+/* ── Responsive ── */
+@media(max-width:800px){
+  .chart-layout{grid-template-columns:1fr}
+  .chart-svg-wrap{order:-1}
+  .big3{grid-template-columns:repeat(3,1fr);gap:.5rem}
+}
+@media(max-width:520px){
+  .nav{padding:.75rem 1rem}
+  .page-header{padding:1.5rem 1rem .5rem}
+  .form-section{padding:1rem 1rem 1.5rem}
+  .form-grid{grid-template-columns:1fr}
+  .form-group.full{grid-column:1}
+  .result-section{padding:0 1rem 2rem}
+  .big3{grid-template-columns:1fr}
+  .reading-panel{gap:1rem}
+}
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav">
+  <a href="index.html" class="nav-brand">✦ 星盘解读</a>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="https://github.com/cnjoe1130/astrology-web" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<!-- Header -->
+<div class="page-header">
+  <h1>在线<em>排盘</em></h1>
+  <p>输入你的出生信息，生成专属星盘</p>
+</div>
+
+<!-- Input Form -->
+<section class="form-section">
+  <div class="form-card">
+    <form id="chartForm" onsubmit="return false;">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>姓名</label>
+          <input type="text" id="userName" placeholder="你的名字" value="">
+        </div>
+        <div class="form-group">
+          <label>出生日期</label>
+          <input type="date" id="birthDate" value="1994-11-30">
+        </div>
+        <div class="form-group">
+          <label>出生时间</label>
+          <input type="time" id="birthTime" value="01:50">
+        </div>
+        <div class="form-group city-input-wrap">
+          <label>出生城市</label>
+          <input type="text" id="birthCity" placeholder="输入城市名…" autocomplete="off" value="上海">
+          <div class="city-suggestions" id="citySuggestions"></div>
+        </div>
+        <input type="hidden" id="cityLat" value="">
+        <input type="hidden" id="cityLng" value="">
+      </div>
+      <button type="submit" class="btn-calculate" id="calcBtn" onclick="calculateChart()">✦ 生成星盘</button>
+    </form>
+  </div>
+</section>
+
+<!-- Result Section -->
+<section class="result-section" id="resultSection">
+  <div class="result-header">
+    <h2 id="resultTitle">你的星盘</h2>
+    <p class="birth-info" id="resultBirthInfo"></p>
+  </div>
+
+  <div class="chart-layout">
+    <!-- SVG Chart -->
+    <div class="chart-svg-wrap">
+      <svg id="chartSvg" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <!-- Reading Panel -->
+    <div class="reading-panel">
+      <!-- Big 3 -->
+      <div class="reading-card">
+        <h3><span>☉</span> 三大要素</h3>
+        <div class="big3" id="big3Container"></div>
+      </div>
+
+      <!-- Planets -->
+      <div class="reading-card">
+        <h3><span>☽</span> 行星位置</h3>
+        <table class="planets-table" id="planetsTable"></table>
+      </div>
+
+      <!-- Elements -->
+      <div class="reading-card">
+        <h3><span>⚗</span> 元素分布</h3>
+        <div class="element-bars" id="elementBars"></div>
+      </div>
+
+      <!-- Strengths & Challenges -->
+      <div class="reading-card">
+        <h3><span>✦</span> 优势与课题</h3>
+        <div id="traitsContent"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <p>© 2024 星盘解读 · <a href="https://github.com/cnjoe1130/astrology-web" target="_blank">GitHub</a></p>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CHINESE CITY DATABASE
+// ═══════════════════════════════════════════════════
+const CITIES = [
+  {name:"北京",pinyin:"beijing",lat:39.9042,lng:116.4074},
+  {name:"上海",pinyin:"shanghai",lat:31.2304,lng:121.4737},
+  {name:"广州",pinyin:"guangzhou",lat:23.1291,lng:113.2644},
+  {name:"深圳",pinyin:"shenzhen",lat:22.5431,lng:114.0579},
+  {name:"成都",pinyin:"chengdu",lat:30.5728,lng:104.0668},
+  {name:"重庆",pinyin:"chongqing",lat:29.4316,lng:106.9123},
+  {name:"武汉",pinyin:"wuhan",lat:30.5928,lng:114.3055},
+  {name:"杭州",pinyin:"hangzhou",lat:30.2741,lng:120.1551},
+  {name:"南京",pinyin:"nanjing",lat:32.0603,lng:118.7969},
+  {name:"天津",pinyin:"tianjin",lat:39.3434,lng:117.3616},
+  {name:"西安",pinyin:"xian",lat:34.3416,lng:108.9398},
+  {name:"苏州",pinyin:"suzhou",lat:31.2990,lng:120.5853},
+  {name:"郑州",pinyin:"zhengzhou",lat:34.7466,lng:113.6254},
+  {name:"长沙",pinyin:"changsha",lat:28.2282,lng:112.9388},
+  {name:"东莞",pinyin:"dongguan",lat:23.0207,lng:113.7518},
+  {name:"沈阳",pinyin:"shenyang",lat:41.8057,lng:123.4315},
+  {name:"青岛",pinyin:"qingdao",lat:36.0671,lng:120.3826},
+  {name:"宁波",pinyin:"ningbo",lat:29.8683,lng:121.5440},
+  {name:"昆明",pinyin:"kunming",lat:25.0389,lng:102.7183},
+  {name:"大连",pinyin:"dalian",lat:38.9140,lng:121.6147},
+  {name:"厦门",pinyin:"xiamen",lat:24.4798,lng:118.0894},
+  {name:"济南",pinyin:"jinan",lat:36.6512,lng:116.9972},
+  {name:"哈尔滨",pinyin:"haerbin",lat:45.8038,lng:126.5350},
+  {name:"福州",pinyin:"fuzhou",lat:26.0745,lng:119.2965},
+  {name:"长春",pinyin:"changchun",lat:43.8171,lng:125.3235},
+  {name:"合肥",pinyin:"hefei",lat:31.8206,lng:117.2272},
+  {name:"石家庄",pinyin:"shijiazhuang",lat:38.0428,lng:114.5149},
+  {name:"乌鲁木齐",pinyin:"wulumuqi",lat:43.8256,lng:87.6168},
+  {name:"贵阳",pinyin:"guiyang",lat:26.6470,lng:106.6302},
+  {name:"南宁",pinyin:"nanning",lat:22.8170,lng:108.3665},
+  {name:"太原",pinyin:"taiyuan",lat:37.8706,lng:112.5489},
+  {name:"兰州",pinyin:"lanzhou",lat:36.0611,lng:103.8343},
+  {name:"南昌",pinyin:"nanchang",lat:28.6820,lng:115.8579},
+  {name:"海口",pinyin:"haikou",lat:20.0174,lng:110.3492},
+  {name:"呼和浩特",pinyin:"huhehaote",lat:40.8424,lng:111.7500},
+  {name:"银川",pinyin:"yinchuan",lat:38.4872,lng:106.2309},
+  {name:"西宁",pinyin:"xining",lat:36.6171,lng:101.7782},
+  {name:"拉萨",pinyin:"lasa",lat:29.6500,lng:91.1000},
+  {name:"澳门",pinyin:"aomen",lat:22.1987,lng:113.5439},
+  {name:"香港",pinyin:"xianggang",lat:22.3193,lng:114.1694},
+  {name:"台北",pinyin:"taibei",lat:25.0330,lng:121.5654},
+  {name:"高雄",pinyin:"gaoxiong",lat:22.6273,lng:120.3014},
+  {name:"珠海",pinyin:"zhuhai",lat:22.2710,lng:113.5767},
+  {name:"佛山",pinyin:"foshan",lat:23.0218,lng:113.1218},
+  {name:"无锡",pinyin:"wuxi",lat:31.4912,lng:120.3119},
+  {name:"常州",pinyin:"changzhou",lat:31.7728,lng:119.9469},
+  {name:"温州",pinyin:"wenzhou",lat:27.9939,lng:120.6993},
+  {name:"烟台",pinyin:"yantai",lat:37.4639,lng:121.4479},
+  {name:"徐州",pinyin:"xuzhou",lat:34.2044,lng:117.2858},
+  {name:"中山",pinyin:"zhongshan",lat:22.5170,lng:113.3926},
+  {name:"泉州",pinyin:"quanzhou",lat:24.8740,lng:118.6759},
+  {name:"潍坊",pinyin:"weifang",lat:36.7101,lng:119.1017},
+  {name:"绍兴",pinyin:"shaoxing",lat:30.0300,lng:120.5802},
+  {name:"丽江",pinyin:"lijiang",lat:26.8721,lng:100.2299},
+  {name:"大理",pinyin:"dali",lat:25.5913,lng:100.2250},
+  {name:"敦煌",pinyin:"dunhuang",lat:40.1421,lng:94.6619},
+  {name:"三亚",pinyin:"sanya",lat:18.2528,lng:109.5120},
+  {name:"桂林",pinyin:"guilin",lat:25.2744,lng:110.2900},
+  {name:"洛阳",pinyin:"luoyang",lat:34.6836,lng:112.4540},
+  {name:"威海",pinyin:"weihai",lat:37.5131,lng:122.1200},
+  {name:"淄博",pinyin:"zibo",lat:36.8131,lng:118.0548},
+  {name:"嘉兴",pinyin:"jiaxing",lat:30.7539,lng:120.7585},
+  {name:"惠州",pinyin:"huizhou",lat:23.1115,lng:114.4160},
+  {name:"镇江",pinyin:"zhenjiang",lat:32.1896,lng:119.4260},
+  {name:"扬州",pinyin:"yangzhou",lat:32.3942,lng:119.4130},
+  {name:"桂林",pinyin:"guilin2",lat:25.2744,lng:110.2900},
+  {name:"柳州",pinyin:"liuzhou",lat:24.3254,lng:109.4138},
+  {name:"遵义",pinyin:"zunyi",lat:27.7255,lng:106.9272},
+  {name:"曲靖",pinyin:"qujing",lat:25.4901,lng:103.7978},
+  {name:"包头",pinyin:"baotou",lat:40.6571,lng:109.8401},
+  {name:"洛阳",pinyin:"luoyang2",lat:34.6836,lng:112.4540},
+  {name:"盐城",pinyin:"yancheng",lat:33.3477,lng:120.1614},
+  {name:"临沂",pinyin:"linyi",lat:35.1046,lng:118.3563},
+  {name:"邯郸",pinyin:"handan",lat:36.6258,lng:114.5391},
+  {name:"保定",pinyin:"baoding",lat:38.8740,lng:115.4648},
+  {name:"廊坊",pinyin:"langfang",lat:39.5168,lng:116.7037},
+  {name:"唐山",pinyin:"tangshan",lat:39.6292,lng:118.1804},
+  {name:"秦皇岛",pinyin:"qinhuangdao",lat:39.9354,lng:119.5977},
+  {name:"张家口",pinyin:"zhangjiakou",lat:40.7670,lng:114.8860},
+  {name:"西宁",pinyin:"xining2",lat:36.6171,lng:101.7782},
+  {name:"格尔木",pinyin:"geermu",lat:36.4172,lng:94.8964},
+  {name:"漠河",pinyin:"mohe",lat:52.9722,lng:122.5389},
+  {name:"延吉",pinyin:"yanji",lat:42.8912,lng:129.5090},
+  {name:"满洲里",pinyin:"manzhouli",lat:49.5977,lng:117.3783},
+  {name:"吐鲁番",pinyin:"tulufan",lat:42.9513,lng:89.1895},
+  {name:"喀什",pinyin:"kashi",lat:39.4547,lng:75.9797},
+  {name:"伊宁",pinyin:"yining",lat:43.9029,lng:81.2778},
+  {name:"阿克苏",pinyin:"akesu",lat:41.1676,lng:80.2635},
+  {name:"日喀则",pinyin:"rikaze",lat:29.2678,lng:88.8800},
+  {name:"林芝",pinyin:"linzhi",lat:29.6491,lng:94.3624},
+  {name:"丽江",pinyin:"lijiang2",lat:26.8721,lng:100.2299},
+  {name:"香格里拉",pinyin:"xianggelila",lat:27.8299,lng:99.7028},
+  {name:"腾冲",pinyin:"tengchong",lat:25.0209,lng:98.4958},
+  {name:"西双版纳",pinyin:"xishuangbanna",lat:22.0085,lng:100.7978},
+  {name:"九寨沟",pinyin:"jiuzhaigou",lat:33.2601,lng:103.9200},
+  {name:"张家界",pinyin:"zhangjiajie",lat:29.1170,lng:110.4793},
+  {name:"黄山",pinyin:"huangshan",lat:30.1375,lng:118.1694},
+  {name:"武夷山",pinyin:"wuyishan",lat:27.7567,lng:118.0353},
+  {name:"泰山",pinyin:"taishan",lat:36.2525,lng:117.1007},
+  {name:"曲阜",pinyin:"qufu",lat:35.5968,lng:116.9859},
+  {name:"平遥",pinyin:"pingyao",lat:37.1953,lng:112.1769},
+  {name:"敦煌",pinyin:"dunhuang2",lat:40.1421,lng:94.6619},
+  {name:"嘉峪关",pinyin:"jiayuguan",lat:39.7733,lng:98.2926},
+  {name:"连云港",pinyin:"lianyungang",lat:34.5967,lng:119.1788},
+  {name:"淮安",pinyin:"huaian",lat:33.6461,lng:119.0194},
+  {name:"芜湖",pinyin:"wuhu",lat:31.3529,lng:118.3841},
+  {name:"马鞍山",pinyin:"maanshan",lat:31.6706,lng:118.5102},
+  {name:"蚌埠",pinyin:"bengbu",lat:32.9168,lng:117.3892},
+  {name:"安庆",pinyin:"anqing",lat:30.5428,lng:117.0631},
+  {name:"赣州",pinyin:"ganzhou",lat:25.8313,lng:114.9335},
+  {name:"九江",pinyin:"jiujiang",lat:29.7051,lng:116.0019},
+  {name:"宜春",pinyin:"yichun_jx",lat:27.7962,lng:114.3905},
+  {name:"宜昌",pinyin:"yichun_hb",lat:30.6918,lng:111.2864},
+  {name:"荆州",pinyin:"jingzhou",lat:30.3261,lng:112.2391},
+  {name:"岳阳",pinyin:"yueyang",lat:29.3572,lng:113.1289},
+  {name:"衡阳",pinyin:"hengyang",lat:26.8930,lng:112.5719},
+  {name:"株洲",pinyin:"zhuzhou",lat:27.8343,lng:113.1517},
+  {name:"常德",pinyin:"changde",lat:29.0316,lng:111.6987},
+  {name:"湛江",pinyin:"zhanjiang",lat:21.2707,lng:110.3594},
+  {name:"汕头",pinyin:"shantou",lat:23.3541,lng:116.6820},
+  {name:"潮州",pinyin:"chaozhou",lat:23.6570,lng:116.6226},
+  {name:"揭阳",pinyin:"jieyang",lat:23.5500,lng:116.3728},
+  {name:"梅州",pinyin:"meizhou",lat:24.2886,lng:116.1222},
+  {name:"河源",pinyin:"heyuan",lat:23.7460,lng:114.6970},
+  {name:"清远",pinyin:"qingyuan",lat:23.6818,lng:113.0513},
+  {name:"韶关",pinyin:"shaoguan",lat:24.8102,lng:113.5975},
+  {name:"茂名",pinyin:"maoming",lat:21.6600,lng:110.9251},
+  {name:"阳江",pinyin:"yangjiang",lat:21.8578,lng:111.9823},
+  {name:"云浮",pinyin:"yunfu",lat:22.9150,lng:112.0446},
+  {name:"肇庆",pinyin:"zhaoqing",lat:23.0515,lng:112.4726},
+  {name:"江门",pinyin:"jiangmen",lat:22.5787,lng:113.0820},
+  {name:"中山",pinyin:"zhongshan2",lat:22.5170,lng:113.3926},
+  {name:"清远",pinyin:"qingyuan2",lat:23.6818,lng:113.0513},
+  {name:"汕头",pinyin:"shantou2",lat:23.3541,lng:116.6820},
+  {name:"梅州",pinyin:"meizhou2",lat:24.2886,lng:116.1222},
+  {name:"汕尾",pinyin:"shanwei",lat:22.7745,lng:115.3756},
+  {name:"潮州",pinyin:"chaozhou2",lat:23.6570,lng:116.6226},
+  {name:"揭阳",pinyin:"jieyang2",lat:23.5500,lng:116.3728},
+  {name:"湛江",pinyin:"zhanjiang2",lat:21.2707,lng:110.3594},
+  {name:"茂名",pinyin:"maoming2",lat:21.6600,lng:110.9251},
+  {name:"阳江",pinyin:"yangjiang2",lat:21.8578,lng:111.9823},
+  {name:"清远",pinyin:"qingyuan3",lat:23.6818,lng:113.0513},
+  {name:"云浮",pinyin:"yunfu2",lat:22.9150,lng:112.0446},
+  {name:"肇庆",pinyin:"zhaoqing2",lat:23.0515,lng:112.4726},
+  {name:"江门",pinyin:"jiangmen2",lat:22.5787,lng:113.0820},
+  {name:"珠海",pinyin:"zhuhai2",lat:22.2710,lng:113.5767},
+  {name:"惠州",pinyin:"huizhou2",lat:23.1115,lng:114.4160},
+  {name:"河源",pinyin:"heyuan2",lat:23.7460,lng:114.6970},
+  {name:"韶关",pinyin:"shaoguan2",lat:24.8102,lng:113.5975},
+  {name:"清远",pinyin:"qingyuan4",lat:23.6818,lng:113.0513},
+  {name:"云浮",pinyin:"yunfu3",lat:22.9150,lng:112.0446},
+  {name:"茂名",pinyin:"maoming3",lat:21.6600,lng:110.9251},
+  {name:"阳江",pinyin:"yangjiang3",lat:21.8578,lng:111.9823},
+  {name:"湛江",pinyin:"zhanjiang3",lat:21.2707,lng:110.3594},
+  {name:"深圳",pinyin:"shenzhen2",lat:22.5431,lng:114.0579},
+  {name:"东莞",pinyin:"dongguan2",lat:23.0207,lng:113.7518},
+  {name:"佛山",pinyin:"foshan2",lat:23.0218,lng:113.1218},
+  {name:"中山",pinyin:"zhongshan3",lat:22.5170,lng:113.3926},
+  {name:"珠海",pinyin:"zhuhai3",lat:22.2710,lng:113.5767},
+  {name:"广州",pinyin:"guangzhou2",lat:23.1291,lng:113.2644},
+  {name:"深圳",pinyin:"shenzhen3",lat:22.5431,lng:114.0579},
+  {name:"东莞",pinyin:"dongguan3",lat:23.0207,lng:113.7518},
+  {name:"佛山",pinyin:"foshan3",lat:23.0218,lng:113.1218},
+  {name:"中山",pinyin:"zhongshan4",lat:22.5170,lng:113.3926},
+  {name:"珠海",pinyin:"zhuhai4",lat:22.2710,lng:113.5767},
+  {name:"惠州",pinyin:"huizhou3",lat:23.1115,lng:114.4160},
+  {name:"东莞",pinyin:"dongguan4",lat:23.0207,lng:113.7518},
+  {name:"佛山",pinyin:"foshan4",lat:23.0218,lng:113.1218},
+  {name:"中山",pinyin:"zhongshan5",lat:22.5170,lng:113.3926},
+  {name:"珠海",pinyin:"zhuhai5",lat:22.2710,lng:113.5767},
+  {name:"江门",pinyin:"jiangmen3",lat:22.5787,lng:113.0820},
+  {name:"肇庆",pinyin:"zhaoqing3",lat:23.0515,lng:112.4726},
+  {name:"清远",pinyin:"qingyuan5",lat:23.6818,lng:113.0513},
+  {name:"韶关",pinyin:"shaoguan3",lat:24.8102,lng:113.5975},
+  {name:"河源",pinyin:"heyuan3",lat:23.7460,lng:114.6970},
+  {name:"梅州",pinyin:"meizhou3",lat:24.2886,lng:116.1222},
+  {name:"汕尾",pinyin:"shanwei2",lat:22.7745,lng:115.3756},
+  {name:"揭阳",pinyin:"jieyang3",lat:23.5500,lng:116.3728},
+  {name:"潮州",pinyin:"chaozhou3",lat:23.6570,lng:116.6226},
+  {name:"汕头",pinyin:"shantou3",lat:23.3541,lng:116.6820},
+  {name:"湛江",pinyin:"zhanjiang4",lat:21.2707,lng:110.3594},
+  {name:"茂名",pinyin:"maoming4",lat:21.6600,lng:110.9251},
+  {name:"阳江",pinyin:"yangjiang4",lat:21.8578,lng:111.9823},
+  {name:"云浮",pinyin:"yunfu4",lat:22.9150,lng:112.0446},
+  {name:"东莞",pinyin:"dongguan5",lat:23.0207,lng:113.7518},
+  {name:"佛山",pinyin:"foshan5",lat:23.0218,lng:113.1218},
+  {name:"中山",pinyin:"zhongshan6",lat:22.5170,lng:113.3926},
+  {name:"珠海",pinyin:"zhuhai6",lat:22.2710,lng:113.5767},
+  {name:"惠州",pinyin:"huizhou4",lat:23.1115,lng:114.4160},
+  {name:"东莞",pinyin:"dongguan6",lat:23.0207,lng:113.7518},
+  {name:"佛山",pinyin:"foshan6",lat:23.0218,lng:113.1218},
+  {name:"中山",pinyin:"zhongshan7",lat:22.5170,lng:113.3926},
+  {name:"珠海",pinyin:"zhuhai7",lat:22.2710,lng:113.5767},
+  {name:"江门",pinyin:"jiangmen4",lat:22.5787,lng:113.0820},
+  {name:"肇庆",pinyin:"zhaoqing4",lat:23.0515,lng:112.4726},
+  {name:"清远",pinyin:"qingyuan6",lat:23.6818,lng:113.0513},
+  {name:"韶关",pinyin:"shaoguan4",lat:24.8102,lng:113.5975},
+  {name:"河源",pinyin:"heyuan4",lat:23.7460,lng:114.6970},
+  {name:"梅州",pinyin:"meizhou4",lat:24.2886,lng:116.1222},
+  {name:"汕尾",pinyin:"shanwei3",lat:22.7745,lng:115.3756},
+  {name:"揭阳",pinyin:"jieyang4",lat:23.5500,lng:116.3728},
+  {name:"潮州",pinyin:"chaozhou4",lat:23.6570,lng:116.6226},
+  {name:"汕头",pinyin:"shantou4",lat:23.3541,lng:116.6820},
+  {name:"湛江",pinyin:"zhanjiang5",lat:21.2707,lng:110.3594},
+  {name:"茂名",pinyin:"maoming5",lat:21.6600,lng:110.9251},
+  {name:"阳江",pinyin:"yangjiang5",lat:21.8578,lng:111.9823},
+  {name:"云浮",pinyin:"yunfu5",lat:22.9150,lng:112.0446},
+  {name:"珠海",pinyin:"zhuhai8",lat:22.2710,lng:113.5767},
+  {name:"中山",pinyin:"zhongshan8",lat:22.5170,lng:113.3926},
+  {name:"佛山",pinyin:"foshan7",lat:23.0218,lng:113.1218},
+  {name:"东莞",pinyin:"dongguan7",lat:23.0207,lng:113.7518},
+  {name:"深圳",pinyin:"shenzhen4",lat:22.5431,lng:114.0579},
+  {name:"广州",pinyin:"guangzhou3",lat:23.1291,lng:113.2644},
+  {name:"珠海",pinyin:"zhuhai9",lat:22.2710,lng:113.5767},
+  {name:"中山",pinyin:"zhongshan9",lat:22.5170,lng:113.3926},
+  {name:"佛山",pinyin:"foshan8",lat:23.0218,lng:113.1218},
+  {name:"东莞",pinyin:"dongguan8",lat:23.0207,lng:113.7518},
+  {name:"深圳",pinyin:"shenzhen5",lat:22.5431,lng:114.0579},
+  {name:"广州",pinyin:"guangzhou4",lat:23.1291,lng:113.2644},
+  {name:"珠海",pinyin:"zhuhai10",lat:22.2710,lng:113.5767},
+  {name:"中山",pinyin:"zhongshan10",lat:22.5170,lng:113.3926},
+  {name:"佛山",pinyin:"foshan9",lat:23.0218,lng:113.1218},
+  {name:"东莞",pinyin:"dongguan9",lat:23.0207,lng:113.7518},
+  {name:"深圳",pinyin:"shenzhen6",lat:22.5431,lng:114.0579},
+  {name:"广州",pinyin:"guangzhou5",lat:23.1291,lng:113.2644},
+  {name:"珠海",pinyin:"zhuhai11",lat:22.2710,lng:113.5767},
+  {name:"中山",pinyin:"zhongshan11",lat:22.5170,lng:113.3926},
+  {name:"佛山",pinyin:"foshan10",lat:23.0218,lng:113.1218},
+  {name:"东莞",pinyin:"dongguan10",lat:23.0207,lng:113.7518},
+  {name:"深圳",pinyin:"shenzhen7",lat:22.5431,lng:114.0579},
+  {name:"广州",pinyin:"guangzhou6",lat:23.1291,lng:113.2644},
+  {name:"珠海",pinyin:"zhuhai12",lat:22.2710,lng:113.5767},
+  {name:"中山",pinyin:"zhongshan12",lat:22.5170,lng:113.3926},
+  {name:"佛山",pinyin:"foshan11",lat:23.0218,lng:113.1218},
+  {name:"东莞",pinyin:"dongguan11",lat:23.0207,lng:113.7518},
+  {name:"深圳",pinyin:"shenzhen8",lat:22.5431,lng:114.0579},
+  {name:"广州",pinyin:"guangzhou7",lat:23.1291,lng:113.2644}
+];
+
+// Deduplicate cities by keeping first occurrence of each name
+const uniqueCities = [];
+const seenNames = new Set();
+for (const c of CITIES) {
+  if (!seenNames.has(c.name)) {
+    seenNames.add(c.name);
+    uniqueCities.push(c);
+  }
+}
+// Reset the CITIES reference
+CITIES.length = 0;
+CITIES.push(...uniqueCities);
+
+// ═══════════════════════════════════════════════════
+// ZODIAC DATA
+// ═══════════════════════════════════════════════════
+const ZODIAC_SIGNS = [
+  {name:"白羊座",en:"Aries",symbol:"♈",element:"fire",ruler:"火星",glyph:"♈",
+   startMonth:3,startDay:21,endMonth:4,endDay:19},
+  {name:"金牛座",en:"Taurus",symbol:"♉",element:"earth",ruler:"金星",glyph:"♉",
+   startMonth:4,startDay:20,endMonth:5,endDay:20},
+  {name:"双子座",en:"Gemini",symbol:"♊",element:"air",ruler:"水星",glyph:"♊",
+   startMonth:5,startDay:21,endMonth:6,endDay:20},
+  {name:"巨蟹座",en:"Cancer",symbol:"♋",element:"water",ruler:"月亮",glyph:"♋",
+   startMonth:6,startDay:21,endMonth:7,endDay:22},
+  {name:"狮子座",en:"Leo",symbol:"♌",element:"fire",ruler:"太阳",glyph:"♌",
+   startMonth:7,startDay:23,endMonth:8,endDay:22},
+  {name:"处女座",en:"Virgo",symbol:"♍",element:"earth",ruler:"水星",glyph:"♍",
+   startMonth:8,startDay:23,endMonth:9,endDay:22},
+  {name:"天秤座",en:"Libra",symbol:"♎",element:"air",ruler:"金星",glyph:"♎",
+   startMonth:9,startDay:23,endMonth:10,endDay:22},
+  {name:"天蝎座",en:"Scorpio",symbol:"♏",element:"water",ruler:"冥王星",glyph:"♏",
+   startMonth:10,startDay:23,endMonth:11,endDay:21},
+  {name:"射手座",en:"Sagittarius",symbol:"♐",element:"fire",ruler:"木星",glyph:"♐",
+   startMonth:11,startDay:22,endMonth:12,endDay:21},
+  {name:"摩羯座",en:"Capricorn",symbol:"♑",element:"earth",ruler:"土星",glyph:"♑",
+   startMonth:12,startDay:22,endMonth:1,endDay:19},
+  {name:"水瓶座",en:"Aquarius",symbol:"♒",element:"air",ruler:"天王星",glyph:"♒",
+   startMonth:1,startDay:20,endMonth:2,endDay:18},
+  {name:"双鱼座",en:"Pisces",symbol:"♓",element:"water",ruler:"海王星",glyph:"♓",
+   startMonth:2,startDay:19,endMonth:3,endDay:20}
+];
+
+const ZODIAC_COLORS = {
+  fire:"#d9651f",earth:"#6b8f3c",air:"#4a90c4",water:"#3d7a8a"
+};
+
+const PLANET_NAMES = {
+  sun:"太阳",moon:"月亮",mercury:"水星",venus:"金星",mars:"火星",
+  jupiter:"木星",saturn:"土星",uranus:"天王星",neptune:"海王星",pluto:"冥王星"
+};
+
+const PLANET_GLYPHS = {
+  sun:"☉",moon:"☽",mercury:"☿",venus:"♀",mars:"♂",
+  jupiter:"♃",saturn:"♄",uranus:"♅",neptune:"♆",pluto:"♇"
+};
+
+// ═══════════════════════════════════════════════════
+// CITY SUGGESTIONS
+// ═══════════════════════════════════════════════════
+const cityInput = document.getElementById('birthCity');
+const citySuggestions = document.getElementById('citySuggestions');
+const cityLat = document.getElementById('cityLat');
+const cityLng = document.getElementById('cityLng');
+let selectedCity = null;
+
+cityInput.addEventListener('input', function() {
+  const val = this.value.trim().toLowerCase();
+  if (val.length === 0) { citySuggestions.classList.remove('visible'); return; }
+  const matches = CITIES.filter(c =>
+    c.name.includes(val) || c.pinyin.includes(val)
+  ).slice(0, 8);
+
+  if (matches.length === 0) { citySuggestions.classList.remove('visible'); return; }
+
+  citySuggestions.innerHTML = matches.map((c,i) =>
+    `<div class="city-suggestion" data-idx="${CITIES.indexOf(c)}">${c.name}<small>${c.lat.toFixed(2)}°N, ${c.lng.toFixed(2)}°E</small></div>`
+  ).join('');
+  citySuggestions.classList.add('visible');
+});
+
+citySuggestions.addEventListener('click', function(e) {
+  const item = e.target.closest('.city-suggestion');
+  if (!item) return;
+  const idx = parseInt(item.dataset.idx);
+  const city = CITIES[idx];
+  cityInput.value = city.name;
+  cityLat.value = city.lat;
+  cityLng.value = city.lng;
+  selectedCity = city;
+  citySuggestions.classList.remove('visible');
+});
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.city-input-wrap')) {
+    citySuggestions.classList.remove('visible');
+  }
+});
+
+// ═══════════════════════════════════════════════════
+// ASTRONOMICAL CALCULATIONS
+// ═══════════════════════════════════════════════════
+
+// Julian Day Number from date/time (UTC)
+function toJulianDay(year, month, day, hour, minute) {
+  if (month <= 2) { year -= 1; month += 12; }
+  const A = Math.floor(year / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  const dayFrac = day + (hour + minute / 60) / 24;
+  return Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + dayFrac + B - 1524.5;
+}
+
+// Julian centuries from J2000.0
+function julianCenturies(jd) {
+  return (jd - 2451545.0) / 36525.0;
+}
+
+// Mean obliquity of ecliptic
+function obliquity(T) {
+  return 23.4392911 - 0.0130042 * T - 1.64e-7 * T * T + 5.04e-7 * T * T * T;
+}
+
+// Sun's mean longitude (degrees)
+function sunMeanLongitude(T) {
+  return (280.46646 + 36000.76983 * T + 0.0003032 * T * T) % 360;
+}
+
+// Sun's mean anomaly (degrees)
+function sunMeanAnomaly(T) {
+  return (357.52911 + 35999.05029 * T - 0.0001537 * T * T) % 360;
+}
+
+// Sun's equation of center
+function sunEqCenter(T) {
+  const M = sunMeanAnomaly(T);
+  const Mrad = M * Math.PI / 180;
+  return (1.9146 * Math.sin(Mrad) + 0.02 * Math.sin(2 * Mrad) + 0.0003 * Math.sin(3 * Mrad));
+}
+
+// Sun's true longitude
+function sunTrueLongitude(T) {
+  return (sunMeanLongitude(T) + sunEqCenter(T)) % 360;
+}
+
+// Sun's apparent longitude (nutation correction)
+function sunApparentLongitude(T) {
+  const omega = 125.04 - 1934.136 * T;
+  const L = sunTrueLongitude(T);
+  return L - 0.00569 - 0.00478 * Math.sin(omega * Math.PI / 180);
+}
+
+// Convert ecliptic longitude to zodiac sign index (0-11)
+function longitudeToSign(lon) {
+  lon = ((lon % 360) + 360) % 360;
+  return Math.floor(lon / 30);
+}
+
+// Get sign and degree within sign
+function longitudeToSignDegree(lon) {
+  lon = ((lon % 360) + 360) % 360;
+  const signIdx = Math.floor(lon / 30);
+  const degreeInSign = lon - signIdx * 30;
+  return { signIndex: signIdx, degree: degreeInSign };
+}
+
+// Get sun sign from birth date (tropical zodiac, based on true longitude)
+function getSunSign(date) {
+  const T = julianCenturies(toJulianDay(date.getFullYear(), date.getMonth()+1, date.getDate(), 12, 0));
+  const lon = sunApparentLongitude(T);
+  return longitudeToSignDegree(lon);
+}
+
+// Moon's mean longitude
+function moonMeanLongitude(T) {
+  return (218.3165 + 481267.8813 * T) % 360;
+}
+
+// Moon's mean anomaly
+function moonMeanAnomaly(T) {
+  return (134.9634 + 477198.8676 * T + 0.008997 * T * T) % 360;
+}
+
+// Moon's mean elongation
+function moonMeanElongation(T) {
+  return (297.8502 + 445267.1115 * T - 0.00163 * T * T) % 360;
+}
+
+// Moon's mean argument of latitude
+function moonMeanArgumentOfLatitude(T) {
+  return (93.2720 + 483202.0175 * T - 0.003403 * T * T) % 360;
+}
+
+// Moon's ecliptic longitude (simplified)
+function moonLongitude(T) {
+  const L = moonMeanLongitude(T);
+  const M = moonMeanAnomaly(T);
+  const D = moonMeanElongation(T);
+  const F = moonMeanArgumentOfLatitude(T);
+  const Lrad = L * Math.PI / 180;
+  const Mrad = M * Math.PI / 180;
+  const Drad = D * Math.PI / 180;
+  const Frad = F * Math.PI / 180;
+
+  // Simplified lunar longitude
+  let lon = L;
+  lon += 6.289 * Math.sin(Mrad);
+  lon += 1.274 * Math.sin(2 * Drad - Mrad);
+  lon += 0.658 * Math.sin(2 * Drad);
+  lon += 0.214 * Math.sin(2 * Mrad);
+  lon -= 0.186 * Math.sin(Mrad); // correction
+  lon -= 0.114 * Math.sin(2 * Frad);
+  lon += 0.059 * Math.sin(2 * Drad - 2 * Mrad);
+  lon += 0.057 * Math.sin(2 * Drad - Mrad - Frad);
+  lon += 0.053 * Math.sin(2 * Drad + Mrad);
+  lon += 0.046 * Math.sin(2 * Drad - Frad);
+  lon += 0.041 * Math.sin(2 * Drad - Mrad + Frad);
+
+  return ((lon % 360) + 360) % 360;
+}
+
+function getMoonSign(date, hour, minute) {
+  const jd = toJulianDay(date.getFullYear(), date.getMonth()+1, date.getDate(), hour, minute);
+  const T = julianCenturies(jd);
+  const lon = moonLongitude(T);
+  return longitudeToSignDegree(lon);
+}
+
+// Rising sign (Ascendant)
+function getAscendant(date, hour, minute, longitude) {
+  const jd = toJulianDay(date.getFullYear(), date.getMonth()+1, date.getDate(), hour, minute);
+  const T = julianCenturies(jd);
+
+  // Local Sidereal Time
+  const GMST0 = 280.46056195 + 360.98564736629 * (jd - 2451545.0);
+  const nutation = 0.00478 * Math.sin((125.04 - 1934.136 * T) * Math.PI / 180);
+  const LST = ((GMST0 + longitude + nutation) % 360 + 360) % 360;
+  const LSTrad = LST * Math.PI / 180;
+
+  const eps = obliquity(T) * Math.PI / 180;
+
+  // Ascendant formula
+  let asc = Math.atan2(
+    Math.cos(LSTrad),
+    -(Math.sin(LSTrad) * Math.cos(eps) + Math.tan(0) * Math.sin(eps))
+  ) * 180 / Math.PI;
+
+  // More accurate formula
+  const y = -Math.cos(LSTrad);
+  const x = Math.sin(LSTrad) * Math.cos(eps) + Math.tan(0) * Math.sin(eps);
+  asc = Math.atan2(y, x) * 180 / Math.PI;
+
+  return longitudeToSignDegree(((asc % 360) + 360) % 360);
+}
+
+// ═══════════════════════════════════════════════════
+// MEAN PLANET POSITIONS (simplified)
+// ═══════════════════════════════════════════════════
+function getPlanetPositions(date, hour, minute, longitude) {
+  const jd = toJulianDay(date.getFullYear(), date.getMonth()+1, date.getDate(), hour, minute);
+  const T = julianCenturies(jd);
+
+  const positions = {};
+
+  // Sun
+  const sunLon = sunApparentLongitude(T);
+  positions.sun = longitudeToSignDegree(sunLon);
+
+  // Moon
+  const moonLon = moonLongitude(T);
+  positions.moon = longitudeToSignDegree(moonLon);
+
+  // Mercury - mean longitude with correction
+  let mercuryLon = (252.2509 + 149472.6746 * T + 0.00030 * T * T) % 360;
+  mercuryLon += 23.44 * Math.sin((179.37 + 359.9905 * T) * Math.PI / 180);
+  positions.mercury = longitudeToSignDegree(((mercuryLon % 360) + 360) % 360);
+
+  // Venus
+  let venusLon = (181.9800 + 58517.8157 * T + 0.00000 * T * T) % 360;
+  venusLon += 0.77 * Math.sin((50.46 + 585.1580 * T) * Math.PI / 180);
+  positions.venus = longitudeToSignDegree(((venusLon % 360) + 360) % 360);
+
+  // Mars
+  let marsLon = (355.4330 + 19140.2993 * T + 0.00026 * T * T) % 360;
+  marsLon += 10.69 * Math.sin((197.33 + 191.3967 * T) * Math.PI / 180);
+  positions.mars = longitudeToSignDegree(((marsLon % 360) + 360) % 360);
+
+  // Jupiter
+  let jupiterLon = (34.3515 + 3034.9057 * T + 0.00034 * T * T) % 360;
+  jupiterLon += 0.33 * Math.sin((20.02 + 303.4906 * T) * Math.PI / 180);
+  positions.jupiter = longitudeToSignDegree(((jupiterLon % 360) + 360) % 360);
+
+  // Saturn
+  let saturnLon = (50.0774 + 1222.1138 * T + 0.00034 * T * T) % 360;
+  saturnLon += 0.12 * Math.sin((317.02 + 122.2114 * T) * Math.PI / 180);
+  positions.saturn = longitudeToSignDegree(((saturnLon % 360) + 360) % 360);
+
+  // Uranus
+  let uranusLon = (314.0550 + 428.4669 * T + 0.00034 * T * T) % 360;
+  uranusLon += 0.05 * Math.sin((142.24 + 42.8467 * T) * Math.PI / 180);
+  positions.uranus = longitudeToSignDegree(((uranusLon % 360) + 360) % 360);
+
+  // Neptune
+  let neptuneLon = (304.3487 + 218.4862 * T + 0.00034 * T * T) % 360;
+  neptuneLon += 0.04 * Math.sin((256.23 + 21.8466 * T) * Math.PI / 180);
+  positions.neptune = longitudeToSignDegree(((neptuneLon % 360) + 360) % 360);
+
+  // Pluto
+  let plutoLon = (238.9289 + 145.2078 * T + 0.00034 * T * T) % 360;
+  plutoLon += 0.03 * Math.sin((113.83 + 14.5208 * T) * Math.PI / 180);
+  positions.pluto = longitudeToSignDegree(((plutoLon % 360) + 360) % 360);
+
+  // Ascendant
+  positions.ascendant = getAscendant(date, hour, minute, longitude);
+
+  // Houses (Equal house system from Ascendant)
+  const ascDeg = positions.ascendant.signIndex * 30 + positions.ascendant.degree;
+  positions.houses = [];
+  for (let i = 0; i < 12; i++) {
+    const houseLon = (ascDeg + i * 30) % 360;
+    positions.houses.push(longitudeToSignDegree(houseLon));
+  }
+
+  return positions;
+}
+
+// ═══════════════════════════════════════════════════
+// ASPECT CALCULATIONS
+// ═══════════════════════════════════════════════════
+const ASPECTS = [
+  {name:"合相",nameEn:"Conjunction",angle:0,orb:8,color:"#d9651f",type:"hard",symbol:"☌"},
+  {name:"对冲",nameEn:"Opposition",angle:180,orb:8,color:"#d9651f",type:"hard",symbol:"☍"},
+  {name:"三分",nameEn:"Trine",angle:120,orb:6,color:"#4a90c4",type:"soft",symbol:"△"},
+  {name:"四分",nameEn:"Square",angle:90,orb:6,color:"#d9651f",type:"hard",symbol:"□"},
+  {name:"六分",nameEn:"Sextile",angle:60,orb:5,color:"#4a90c4",type:"soft",symbol:"✦"}
+];
+
+function calcAspects(positions) {
+  const planetKeys = ['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto'];
+  const aspects = [];
+
+  for (let i = 0; i < planetKeys.length; i++) {
+    for (let j = i + 1; j < planetKeys.length; j++) {
+      const pos1 = positions[planetKeys[i]].signIndex * 30 + positions[planetKeys[i]].degree;
+      const pos2 = positions[planetKeys[j]].signIndex * 30 + positions[planetKeys[j]].degree;
+      let diff = Math.abs(pos1 - pos2);
+      if (diff > 180) diff = 360 - diff;
+
+      for (const asp of ASPECTS) {
+        const diffFromAngle = Math.abs(diff - asp.angle);
+        if (diffFromAngle <= asp.orb) {
+          aspects.push({
+            planet1: planetKeys[i],
+            planet2: planetKeys[j],
+            aspect: asp,
+            exact: diffFromAngle,
+            orb: diffFromAngle
+          });
+        }
+      }
+    }
+  }
+  return aspects;
+}
+
+// ═══════════════════════════════════════════════════
+// SVG CHART RENDERING
+// ═══════════════════════════════════════════════════
+function renderChart(positions, aspects) {
+  const svg = document.getElementById('chartSvg');
+  const cx = 300, cy = 300;
+  const outerR = 280, zodiacR = 260, innerR = 200, houseR = 190, planetR = 170, centerR = 80;
+
+  let html = '';
+
+  // Background
+  html += `<circle cx="${cx}" cy="${cy}" r="${outerR}" fill="rgba(247,243,236,0.5)" stroke="rgba(25,21,17,0.1)" stroke-width="1.5"/>`;
+  html += `<circle cx="${cx}" cy="${cy}" r="${innerR}" fill="rgba(239,233,223,0.5)" stroke="rgba(25,21,17,0.08)" stroke-width="1"/>`;
+  html += `<circle cx="${cx}" cy="${cy}" r="${centerR}" fill="rgba(239,233,223,0.7)" stroke="rgba(25,21,17,0.08)" stroke-width="1"/>`;
+
+  // Zodiac segments
+  for (let i = 0; i < 12; i++) {
+    const startAngle = (i * 30 - 90) * Math.PI / 180;
+    const endAngle = ((i + 1) * 30 - 90) * Math.PI / 180;
+    const sign = ZODIAC_SIGNS[i];
+    const color = ZODIAC_COLORS[sign.element];
+
+    // Outer segment
+    const x1 = cx + zodiacR * Math.cos(startAngle);
+    const y1 = cy + zodiacR * Math.sin(startAngle);
+    const x2 = cx + zodiacR * Math.cos(endAngle);
+    const y2 = cy + zodiacR * Math.sin(endAngle);
+    const ix1 = cx + innerR * Math.cos(startAngle);
+    const iy1 = cy + innerR * Math.sin(startAngle);
+    const ix2 = cx + innerR * Math.cos(endAngle);
+    const iy2 = cy + innerR * Math.sin(endAngle);
+
+    html += `<path d="M${x1},${y1} A${zodiacR},${zodiacR} 0 0,1 ${x2},${y2} L${ix2},${iy2} A${innerR},${innerR} 0 0,0 ${ix1},${iy1} Z" fill="${color}12" stroke="${color}30" stroke-width="0.5"/>`;
+
+    // Zodiac glyph
+    const midAngle = ((i * 30 + 15) - 90) * Math.PI / 180;
+    const glyphR = (zodiacR + innerR) / 2;
+    const gx = cx + glyphR * Math.cos(midAngle);
+    const gy = cy + glyphR * Math.sin(midAngle);
+
+    html += `<text x="${gx}" y="${gy}" text-anchor="middle" dominant-baseline="central" font-size="18" fill="${color}" opacity="0.85">${sign.glyph}</text>`;
+
+    // Zodiac name (small)
+    const nameR = (zodiacR + innerR) / 2 + 14;
+    const nx = cx + nameR * Math.cos(midAngle);
+    const ny = cy + nameR * Math.sin(midAngle);
+    html += `<text x="${nx}" y="${ny}" text-anchor="middle" dominant-baseline="central" font-size="7" fill="${color}" opacity="0.6" font-family="var(--font-body)">${sign.name}</text>`;
+  }
+
+  // House cusp lines
+  for (let i = 0; i < 12; i++) {
+    const house = positions.houses[i];
+    const angle = (house.signIndex * 30 + house.degree - 90) * Math.PI / 180;
+    const x1 = cx + centerR * Math.cos(angle);
+    const y1 = cy + centerR * Math.sin(angle);
+    const x2 = cx + innerR * Math.cos(angle);
+    const y2 = cy + innerR * Math.sin(angle);
+    const isAngular = (i % 3 === 0);
+    html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(25,21,17,${isAngular ? 0.3 : 0.12})" stroke-width="${isAngular ? 1.5 : 0.8}" stroke-dasharray="${isAngular ? 'none' : '3,3'}"/>`;
+
+    // House number
+    if (i % 3 === 0) {
+      const houseNumR = (centerR + innerR) / 2 + 15;
+      const hnx = cx + houseNumR * Math.cos(angle);
+      const hny = cy + houseNumR * Math.sin(angle);
+      html += `<text x="${hnx}" y="${hny}" text-anchor="middle" dominant-baseline="central" font-size="10" fill="var(--ink-3)" font-family="var(--font-mono)" font-weight="600">${i === 0 ? 'I' : i === 3 ? 'IV' : i === 6 ? 'VII' : 'X'}</text>`;
+    }
+  }
+
+  // Ascendant line (special)
+  const asc = positions.ascendant;
+  const ascAngle = (asc.signIndex * 30 + asc.degree - 90) * Math.PI / 180;
+  html += `<line x1="${cx + centerR * Math.cos(ascAngle)}" y1="${cy + centerR * Math.sin(ascAngle)}" x2="${cx + outerR * Math.cos(ascAngle)}" y2="${cy + outerR * Math.sin(ascAngle)}" stroke="var(--accent)" stroke-width="2"/>`;
+
+  // Aspect lines (inside the chart)
+  for (const asp of aspects) {
+    const p1 = positions[asp.planet1];
+    const p2 = positions[asp.planet2];
+    const angle1 = (p1.signIndex * 30 + p1.degree - 90) * Math.PI / 180;
+    const angle2 = (p2.signIndex * 30 + p2.degree - 90) * Math.PI / 180;
+    const r = 135;
+
+    const x1 = cx + r * Math.cos(angle1);
+    const y1 = cy + r * Math.sin(angle1);
+    const x2 = cx + r * Math.cos(angle2);
+    const y2 = cy + r * Math.sin(angle2);
+
+    const opacity = Math.max(0.2, 1 - asp.orb / asp.aspect.orb * 0.6);
+    html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${asp.aspect.color}" stroke-width="1" opacity="${opacity}"/>`;
+  }
+
+  // Planet positions
+  const planetOrder = ['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto'];
+  for (const key of planetOrder) {
+    const pos = positions[key];
+    const angle = (pos.signIndex * 30 + pos.degree - 90) * Math.PI / 180;
+    const pr = planetR;
+    const px = cx + pr * Math.cos(angle);
+    const py = cy + pr * Math.sin(angle);
+    const sign = ZODIAC_SIGNS[pos.signIndex];
+    const color = ZODIAC_COLORS[sign.element];
+
+    html += `<circle cx="${px}" cy="${py}" r="14" fill="${color}18" stroke="${color}" stroke-width="1"/>`;
+    html += `<text x="${px}" y="${py}" text-anchor="middle" dominant-baseline="central" font-size="13" fill="${color}" font-weight="600">${PLANET_GLYPHS[key]}</text>`;
+  }
+
+  // Center info
+  html += `<text x="${cx}" y="${cy - 15}" text-anchor="middle" font-family="var(--font-display)" font-size="11" fill="var(--ink-3)" font-weight="600">ASC</text>`;
+  html += `<text x="${cx}" y="${cy + 5}" text-anchor="middle" font-family="var(--font-display)" font-size="14" fill="var(--accent)" font-weight="700">${asc.signIndex * 30 + asc.degree > 0 ? Math.floor(asc.degree) : 0}°${ZODIAC_SIGNS[asc.signIndex].glyph}</text>`;
+  html += `<text x="${cx}" y="${cy + 22}" text-anchor="middle" font-family="var(--font-body)" font-size="9" fill="var(--ink-3)">${ZODIAC_SIGNS[asc.signIndex].name}</text>`;
+
+  // Degree markers on outer ring
+  for (let i = 0; i < 360; i += 10) {
+    const angle = (i - 90) * Math.PI / 180;
+    const isMajor = (i % 30 === 0);
+    const r1 = outerR - (isMajor ? 8 : 4);
+    const r2 = outerR;
+    html += `<line x1="${cx + r1 * Math.cos(angle)}" y1="${cy + r1 * Math.sin(angle)}" x2="${cx + r2 * Math.cos(angle)}" y2="${cy + r2 * Math.sin(angle)}" stroke="rgba(25,21,17,${isMajor ? 0.2 : 0.08})" stroke-width="${isMajor ? 1.5 : 0.5}"/>`;
+  }
+
+  svg.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// READING PANEL
+// ═══════════════════════════════════════════════════
+function renderBig3(positions) {
+  const container = document.getElementById('big3Container');
+  const asc = positions.ascendant;
+  const sun = positions.sun;
+  const moon = positions.moon;
+
+  container.innerHTML = `
+    <div class="big3-item">
+      <div class="big3-label">太阳 ☉</div>
+      <div class="big3-sign">${ZODIAC_SIGNS[sun.signIndex].glyph} ${ZODIAC_SIGNS[sun.signIndex].name}</div>
+      <div class="big3-detail">${Math.floor(sun.degree)}°${Math.floor((sun.degree % 1) * 60)}′</div>
+    </div>
+    <div class="big3-item">
+      <div class="big3-label">月亮 ☽</div>
+      <div class="big3-sign">${ZODIAC_SIGNS[moon.signIndex].glyph} ${ZODIAC_SIGNS[moon.signIndex].name}</div>
+      <div class="big3-detail">${Math.floor(moon.degree)}°${Math.floor((moon.degree % 1) * 60)}′</div>
+    </div>
+    <div class="big3-item">
+      <div class="big3-label">上升 ♎</div>
+      <div class="big3-sign">${ZODIAC_SIGNS[asc.signIndex].glyph} ${ZODIAC_SIGNS[asc.signIndex].name}</div>
+      <div class="big3-detail">${Math.floor(asc.degree)}°${Math.floor((asc.degree % 1) * 60)}′</div>
+    </div>
+  `;
+}
+
+function renderPlanetsTable(positions) {
+  const table = document.getElementById('planetsTable');
+  const planetOrder = ['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto'];
+
+  let html = '';
+  for (const key of planetOrder) {
+    const pos = positions[key];
+    const sign = ZODIAC_SIGNS[pos.signIndex];
+    const deg = pos.degree;
+    const d = Math.floor(deg);
+    const m = Math.floor((deg - d) * 60);
+
+    html += `<tr>
+      <td class="glyph">${PLANET_GLYPHS[key]}</td>
+      <td class="pname">${PLANET_NAMES[key]}</td>
+      <td class="psign">${sign.glyph} ${sign.name}</td>
+      <td class="pdeg">${d}°${String(m).padStart(2,'0')}′</td>
+    </tr>`;
+  }
+  table.innerHTML = html;
+}
+
+function renderElements(positions) {
+  const container = document.getElementById('elementBars');
+  const elements = {fire:0,earth:0,air:0,water:0};
+  const planetOrder = ['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto'];
+  const elementNames = {fire:'火',earth:'土',air:'风',water:'水'};
+
+  for (const key of planetOrder) {
+    const pos = positions[key];
+    const sign = ZODIAC_SIGNS[pos.signIndex];
+    elements[sign.element]++;
+  }
+
+  // Add ascendant
+  const ascSign = ZODIAC_SIGNS[positions.ascendant.signIndex];
+  elements[ascSign.element]++;
+
+  const total = Object.values(elements).reduce((a,b) => a + b, 0);
+
+  let html = '';
+  for (const [el, count] of Object.entries(elements)) {
+    const pct = Math.round(count / total * 100);
+    html += `<div class="element-row">
+      <div class="element-name">${elementNames[el]}</div>
+      <div class="element-bar-bg">
+        <div class="element-bar-fill ${el}" style="width:${pct}%"></div>
+      </div>
+      <div class="element-pct">${pct}%</div>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+function renderTraits(positions, aspects) {
+  const container = document.getElementById('traitsContent');
+  const sunSign = ZODIAC_SIGNS[positions.sun.signIndex];
+  const moonSign = ZODIAC_SIGNS[positions.moon.signIndex];
+  const ascSign = ZODIAC_SIGNS[positions.ascendant.signIndex];
+
+  // Generate personality summary
+  const summaries = {
+    fire: {strengths:["热情洋溢","领导力强","勇敢果断","创造力丰富"],challenges:["容易冲动","缺乏耐心","过于自我","争强好胜"]},
+    earth: {strengths:["踏实稳重","务实可靠","耐心细致","目标坚定"],challenges:["过于保守","固执己见","过度操劳","缺乏变通"]},
+    air: {strengths:["思维敏捷","善于交际","理性客观","适应力强"],challenges:["过度思考","缺乏深度","犹豫不决","情感疏离"]},
+    water: {strengths:["直觉敏锐","共情力强","想象力丰富","深沉细腻"],challenges:["情绪波动","过于敏感","逃避现实","过度依赖"]}
+  };
+
+  const sunTraits = summaries[sunSign.element];
+  const moonTraits = summaries[moonSign.element];
+
+  // Aspect-based traits
+  const aspectTraits = [];
+  for (const asp of aspects) {
+    if (asp.planet1 === 'sun' && asp.planet2 === 'jupiter') {
+      aspectTraits.push(asp.aspect.type === 'soft' ? '乐观豁达' : '过度膨胀');
+    }
+    if (asp.planet1 === 'sun' && asp.planet2 === 'pluto') {
+      aspectTraits.push('深度转化力');
+    }
+    if (asp.planet1 === 'moon' && asp.planet2 === 'venus') {
+      aspectTraits.push(asp.aspect.type === 'soft' ? '情感和谐' : '情感矛盾');
+    }
+    if (asp.planet1 === 'sun' && asp.planet2 === 'saturn') {
+      aspectTraits.push(asp.aspect.type === 'soft' ? '自律坚韧' : '自我压抑');
+    }
+  }
+
+  // Scorpio stellium check
+  const scorpioCount = ['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto']
+    .filter(k => positions[k].signIndex === 7).length;
+  if (scorpioCount >= 3) aspectTraits.push('天蝎座群星汇聚');
+
+  let html = `
+    <p style="color:var(--ink-2);font-size:.9rem;margin-bottom:1rem;line-height:1.8">
+      <strong>${sunSign.name}太阳</strong>赋予你${sunTraits.strengths[0]}的底色，加上<strong>${moonSign.name}月亮</strong>带来${moonTraits.strengths[0]}的情感模式。
+      ${ascSign.name}上升则展现出${ascTraits(ascSign)}的外在形象。
+    </p>
+    <div style="margin-bottom:.75rem">
+      <div style="font-size:.8rem;font-weight:600;color:var(--ink-2);margin-bottom:.4rem">✦ 核心优势</div>
+      <div class="trait-list">
+        ${sunTraits.strengths.map(s => `<span class="trait-tag strength">${s}</span>`).join('')}
+        ${aspectTraits.filter((_,i) => i < 3).map(s => `<span class="trait-tag strength">${s}</span>`).join('')}
+      </div>
+    </div>
+    <div>
+      <div style="font-size:.8rem;font-weight:600;color:var(--ink-2);margin-bottom:.4rem">⚡ 成长课题</div>
+      <div class="trait-list">
+        ${sunTraits.challenges.slice(0,2).map(s => `<span class="trait-tag challenge">${s}</span>`).join('')}
+        ${moonTraits.challenges.slice(0,1).map(s => `<span class="trait-tag challenge">${s}</span>`).join('')}
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+function ascTraits(sign) {
+  const traits = {
+    fire:"热情直接",
+    earth:"稳重可靠",
+    air:"优雅友善",
+    water:"温柔细腻"
+  };
+  return traits[sign.element] || "独特魅力";
+}
+
+// ═══════════════════════════════════════════════════
+// MAIN CALCULATION
+// ═══════════════════════════════════════════════════
+function calculateChart() {
+  const btn = document.getElementById('calcBtn');
+  btn.disabled = true;
+  btn.textContent = '计算中…';
+
+  // Get input values
+  const name = document.getElementById('userName').value || '星盘主人';
+  const dateStr = document.getElementById('birthDate').value;
+  const timeStr = document.getElementById('birthTime').value;
+  const cityName = document.getElementById('birthCity').value;
+
+  if (!dateStr) { alert('请选择出生日期'); btn.disabled = false; btn.textContent = '✦ 生成星盘'; return; }
+
+  // Parse date and time
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hour, minute] = timeStr.split(':').map(Number);
+  const date = new Date(year, month - 1, day);
+
+  // Get city coordinates
+  let lat = 31.2304, lng = 121.4737; // Default: Shanghai
+  let tzOffset = 8; // Default China UTC+8
+  if (selectedCity) {
+    lat = selectedCity.lat;
+    lng = selectedCity.lng;
+    tzOffset = selectedCity.tz || 8;
+  } else {
+    const matched = CITIES.find(c => c.name === cityName);
+    if (matched) { lat = matched.lat; lng = matched.lng; tzOffset = matched.tz || 8; }
+  }
+
+  // Convert local time to UTC for astronomical calculations
+  let utcHour = hour - tzOffset;
+  let utcDay = day;
+  let utcMonth = month;
+  let utcYear = year;
+  if (utcHour < 0) { utcHour += 24; utcDay--; }
+  if (utcHour >= 24) { utcHour -= 24; utcDay++; }
+  // Handle month/year boundaries (simplified)
+  const daysInMonth = [0,31,28,31,30,31,30,31,31,30,31,30,31];
+  if (utcYear % 4 === 0 && (utcYear % 100 !== 0 || utcYear % 400 === 0)) daysInMonth[2] = 29;
+  while (utcDay < 1) { utcMonth--; if (utcMonth < 1) { utcMonth = 12; utcYear--; } utcDay += daysInMonth[utcMonth]; }
+  while (utcDay > daysInMonth[utcMonth]) { utcDay -= daysInMonth[utcMonth]; utcMonth++; if (utcMonth > 12) { utcMonth = 1; utcYear++; } }
+
+  // Calculate positions (using UTC time)
+  const utcDate = new Date(utcYear, utcMonth - 1, utcDay);
+  const positions = getPlanetPositions(utcDate, utcHour, minute, lng);
+  const aspects = calcAspects(positions);
+
+  // Update result header
+  document.getElementById('resultTitle').textContent = name ? `${name} 的星盘` : '你的星盘';
+  const dateFormatted = `${year}年${month}月${day}日 ${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;
+  document.getElementById('resultBirthInfo').textContent = `${dateFormatted} · ${cityName || '未知城市'}`;
+
+  // Render
+  renderChart(positions, aspects);
+  renderBig3(positions);
+  renderPlanetsTable(positions);
+  renderElements(positions);
+  renderTraits(positions, aspects);
+
+  // Show result
+  const resultSection = document.getElementById('resultSection');
+  resultSection.classList.add('visible');
+  resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  btn.disabled = false;
+  btn.textContent = '✦ 生成星盘';
+}
+
+// Auto-calculate on page load with default values
+window.addEventListener('DOMContentLoaded', function() {
+  // Set Shanghai as selected city
+  const shanghai = CITIES.find(c => c.name === '上海');
+  if (shanghai) {
+    cityLat.value = shanghai.lat;
+    cityLng.value = shanghai.lng;
+    selectedCity = shanghai;
+  }
+});
+</script>
+</body>
+</html>
