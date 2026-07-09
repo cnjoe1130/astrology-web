@@ -1489,8 +1489,8 @@ function switchMode(mode) {
   currentMode = mode;
   document.getElementById('modeSingle').classList.toggle('active', mode === 'single');
   document.getElementById('modeSynastry').classList.toggle('active', mode === 'synastry');
-  document.getElementById('singleFormCard').style.display = mode === 'single' ? '' : 'none';
-  document.getElementById('synastryFormCard').style.display = mode === 'synastry' ? '' : 'none';
+  document.getElementById('singleFormCard').style.display = mode === 'single' ? 'block' : 'none';
+  document.getElementById('synastryFormCard').style.display = mode === 'synastry' ? 'block' : 'none';
 
   // Toggle wider layout for synastry form
   document.querySelector('.form-section').classList.toggle('synastry-mode', mode === 'synastry');
