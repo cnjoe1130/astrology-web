@@ -981,11 +981,11 @@ function renderChart(positions, aspects) {
 
     html += `<text x="${gx}" y="${gy}" text-anchor="middle" dominant-baseline="central" font-size="18" fill="${color}" opacity="0.85">${sign.glyph}</text>`;
 
-    // Zodiac name (small)
-    const nameR = (zodiacR + innerR) / 2 + 14;
+    // Zodiac name (outside outer ring)
+    const nameR = outerR + 12;
     const nx = cx + nameR * Math.cos(midAngle);
     const ny = cy + nameR * Math.sin(midAngle);
-    html += `<text x="${nx}" y="${ny}" text-anchor="middle" dominant-baseline="central" font-size="7" fill="${color}" opacity="0.6" font-family="var(--font-body)">${sign.name}</text>`;
+    html += `<text x="${nx}" y="${ny}" text-anchor="middle" dominant-baseline="central" font-size="8" fill="${color}" opacity="0.7" font-family="var(--font-body)">${sign.name}</text>`;
   }
 
   // House cusp lines
